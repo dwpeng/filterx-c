@@ -691,7 +691,8 @@ int usage(){
 	" -[1-9] <string>  Attributes for group 1..9, delimited by ':' \n"
 	"                  -1 for group 1 and -2..9 for group 2 to 9.\n"
 	"                  Group attributes may be count or freqency of the occurrence,output columns etc.Detail as follows.\n"
-	"\n"
+	" -o     <string>  Output file name. Default is stdout.\n"
+  "\n"
 	"Attribute:\n"
 	"Group attributes and file attributes are provided for a flexible way to adjust the output according to user specified.\n"
 	"An input file can belong to one or more groups,In default,it belongs to group 1.\n"
@@ -738,6 +739,7 @@ int main(int argc, char **argv){
 			case 'k': parse_keys_filterx(x, optarg); break;
 			case 'b': builtin_enums_filterx(x); break;
 			case 'e': parse_enums_filterx(x, optarg); break;
+			case 'o': x->out = fopen(optarg, "w"); break;
 			default:
 			if(c >= '1' && c <= '9'){
 				parse_group_filterx(x, c - '0', optarg);
@@ -749,6 +751,7 @@ int main(int argc, char **argv){
 	if(optind == argc) {usage();free_filterx(x);return 1;}
 	for(c=optind;c<argc;c++) parse_file_filterx(x, argv[c]);
 	run_filterx(x);
+	if(x->out != stdout) fclose(x->out);
 	free_filterx(x);
 	return 0;
 }
