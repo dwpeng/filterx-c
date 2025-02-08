@@ -1,0 +1,12 @@
+# Xmake cache
+.xmake/
+build/
+
+# MacOS Cache
+.DS_Store
+
+zig-out/
+.zig-cache/
+test-data
+.vscode/compile_commands.json
+.vscode/launch.json
