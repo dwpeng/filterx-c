@@ -1,0 +1,25 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        zig: [ 0.14.0-dev.1511+54b668f8a ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+
+    name: Zig ${{ matrix.zig }} on ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Setup Zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: ${{ matrix.zig }}
+      - run: zig build -Dtarget="x86_64-linux-gnu.2.17" -Doptimize=ReleaseFast -j4
