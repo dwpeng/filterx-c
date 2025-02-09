@@ -447,6 +447,7 @@ parse_group_params(const char* arg) {
   group_params.separator = A.separator;
   group_params.min_count = A.min_count;
   group_params.max_count = A.max_count;
+  group_params.record_limit = A.record_limit;
   group_params.comment = A.comment;
   group_params.placehoder = A.placehoder;
   group_params.cut_columns = A.cut_columns;
