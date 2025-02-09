@@ -617,8 +617,39 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
         processor_params->min_count = std::stoll(cnt);
         processor_params->max_count = std::stoll(cnt);
       } else {
-        processor_params->min_count = std::stoll(cnt.substr(0, pos));
-        processor_params->max_count = std::stoll(cnt.substr(pos + 1));
+        std::string start = "1";
+        std::string end = "2147483647";
+        std::string s = cnt.substr(0, pos);
+        if (s.size() > 0) {
+          start = s;
+        }
+        s = cnt.substr(pos + 1);
+        if (s.size() > 0) {
+          end = s;
+        }
+        processor_params->min_count = std::stoll(start);
+        processor_params->max_count = std::stoll(end);
+        if (processor_params->min_count < 0) {
+          fprintf(
+              stderr,
+              "min_count should be greater than or equal to 0, but got %d\n",
+              processor_params->min_count);
+          exit(EXIT_FAILURE);
+        }
+        if (processor_params->max_count < 0) {
+          fprintf(
+              stderr,
+              "max_count should be greater than or equal to 0, but got %d\n",
+              processor_params->max_count);
+          exit(EXIT_FAILURE);
+        }
+        if (processor_params->min_count > processor_params->max_count) {
+          fprintf(stderr,
+                  "min_count should be less than or equal to max_count, but "
+                  "got min_count: %d, max_count: %d\n",
+                  processor_params->min_count, processor_params->max_count);
+          exit(EXIT_FAILURE);
+        }
       }
       i++;
       continue;
@@ -634,8 +665,39 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
         processor_params->fmin_count = std::stof(freq);
         processor_params->fmax_count = std::stof(freq);
       } else {
-        processor_params->fmin_count = std::stof(freq.substr(0, pos));
-        processor_params->fmax_count = std::stof(freq.substr(pos + 1));
+        std::string start = "0.0001";
+        std::string end = "1.0";
+        std::string s = freq.substr(0, pos);
+        if (s.size() > 0) {
+          start = s;
+        }
+        s = freq.substr(pos + 1);
+        if (s.size() > 0) {
+          end = s;
+        }
+        processor_params->fmin_count = std::stof(start);
+        processor_params->fmax_count = std::stof(end);
+        if (processor_params->fmin_count < 0.0
+            || processor_params->fmin_count > 1.0) {
+          fprintf(stderr,
+                  "fmin_count should be in range [0.0, 1.0], but got %f\n",
+                  processor_params->fmin_count);
+          exit(EXIT_FAILURE);
+        }
+        if (processor_params->fmax_count < 0.0
+            || processor_params->fmax_count > 1.0) {
+          fprintf(stderr,
+                  "fmax_count should be in range [0.0, 1.0], but got %f\n",
+                  processor_params->fmax_count);
+          exit(EXIT_FAILURE);
+        }
+        if (processor_params->fmin_count > processor_params->fmax_count) {
+          fprintf(stderr,
+                  "fmin_count should be less than or equal to fmax_count, but "
+                  "got fmin_count: %f, fmax_count: %f\n",
+                  processor_params->fmin_count, processor_params->fmax_count);
+          exit(EXIT_FAILURE);
+        }
       }
       i++;
       continue;

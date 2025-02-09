@@ -3,6 +3,7 @@
 #include "record.h"
 #include "row.h"
 #include <cstdint>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,38 @@ struct FileParams {
   char comment;
   char placehoder;
 };
+
+static void
+print_file_params(FileParams* file_params) {
+  std::cout << "path: " << file_params->path << std::endl;
+  std::cout << "separator: " << file_params->separator << std::endl;
+  std::cout << "row_keys: ";
+  for (auto key : file_params->row_keys) {
+    std::cout << key << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "key_types: ";
+  for (auto key : file_params->key_types) {
+    std::cout << key << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "sort_order: ";
+  for (auto key : file_params->sort_order) {
+    std::cout << key << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "cut_columns: ";
+  for (auto key : file_params->cut_columns) {
+    std::cout << key << " ";
+  }
+  std::cout << std::endl;
+  std::cout << "must_exist: " << file_params->must_exist << std::endl;
+  std::cout << "record_limit: " << file_params->record_limit << std::endl;
+  std::cout << "min_count: " << file_params->min_count << std::endl;
+  std::cout << "max_count: " << file_params->max_count << std::endl;
+  std::cout << "comment: " << file_params->comment << std::endl;
+  std::cout << "placehoder: " << file_params->placehoder << std::endl;
+}
 
 struct ProcessorParams {
   uint32_t min_count;
