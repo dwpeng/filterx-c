@@ -22,12 +22,12 @@ jobs:
         uses: mlugg/setup-zig@v1
         with:
           version: 0.13.0
-      - if: matrix.os == 'windows-latest'
-        name: Build
-        run: |
-          zig build -Doptimize=ReleaseFast -j4
-          strip zig-out/bin/filterx.exe
-          tar -czf filterx-windows-x86_64.tar.gz zig-out/bin/filterx.exe
+      # - if: matrix.os == 'windows-latest'
+      #   name: Build
+      #   run: |
+      #     zig build -Doptimize=ReleaseFast -j4
+      #     strip zig-out/bin/filterx.exe
+      #     tar -czf filterx-windows-x86_64.tar.gz zig-out/bin/filterx.exe
 
       - if: matrix.os == 'macos-latest'
         name: Build
