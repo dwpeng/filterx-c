@@ -10,6 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
+
     runs-on: ${{ matrix.os }}
 
     name: Zig ${{ matrix.zig }} on ${{ matrix.os }}
@@ -20,13 +21,13 @@ jobs:
       - name: Setup Zig
         uses: mlugg/setup-zig@v1
         with:
-          zig-version: 0.13.0
+          version: 0.13.0
       - if: matrix.os == 'windows-latest'
         name: Build
-        run: zig build -Dtarget="x86_64-windows-msvc" -Doptimize=ReleaseFast -j4
+        run: zig build -Doptimize=ReleaseFast -j4
       - if: matrix.os == 'macos-latest'
         name: Build
-        run: zig build -Dtarget="x86_64-darwin" -Doptimize=ReleaseFast -j4
+        run: zig build -Doptimize=ReleaseFast -j4
       - if: matrix.os == 'ubuntu-latest'
         name: Build
         run: zig build -Dtarget="x86_64-linux-gnu.2.17" -Doptimize=ReleaseFast -j4
