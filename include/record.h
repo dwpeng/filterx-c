@@ -107,7 +107,7 @@ public:
         this->record_status = RecordStatusEof;
         break;
       }
-      if(line.value()[0] == this->comment) {
+      if (line.value()[0] == this->comment) {
         continue;
       }
       // printf("line: %s\n", line.value().data());

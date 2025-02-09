@@ -48,37 +48,49 @@ create_record(FileParams* params) {
 void
 apply_group_to_file(FileParams* file_params, GroupParams* group_params) {
   // if not set, use the group configuration
-  if (group_params->separator != defaultFileParams.separator) {
+  if (group_params->separator != defaultFileParams.separator
+      && file_params->separator == defaultFileParams.separator) {
     file_params->separator = group_params->separator;
   }
-  if (group_params->row_keys != defaultFileParams.row_keys) {
+  if (group_params->row_keys != defaultFileParams.row_keys
+      && file_params->row_keys == defaultFileParams.row_keys) {
     file_params->row_keys = group_params->row_keys;
   }
-  if (group_params->key_types != defaultFileParams.key_types) {
+  if (group_params->key_types != defaultFileParams.key_types
+      && file_params->key_types == defaultFileParams.key_types) {
     file_params->key_types = group_params->key_types;
   }
-  if (group_params->sort_order != defaultFileParams.sort_order) {
+  if (group_params->sort_order != defaultFileParams.sort_order
+      && file_params->sort_order == defaultFileParams.sort_order) {
     file_params->sort_order = group_params->sort_order;
   }
-  if (group_params->cut_columns != defaultFileParams.cut_columns) {
+  if (group_params->cut_columns != defaultFileParams.cut_columns
+      && file_params->cut_columns == defaultFileParams.cut_columns) {
     file_params->cut_columns = group_params->cut_columns;
   }
-  if (group_params->must_exist != defaultFileParams.must_exist) {
+  if (group_params->must_exist != defaultFileParams.must_exist
+      && file_params->must_exist == defaultFileParams.must_exist
+      && group_params->must_exist != ExistConditionOptional) {
     file_params->must_exist = group_params->must_exist;
   }
-  if (group_params->record_limit != defaultFileParams.record_limit) {
+  if (group_params->record_limit != defaultFileParams.record_limit
+      && file_params->record_limit == defaultFileParams.record_limit) {
     file_params->record_limit = group_params->record_limit;
   }
-  if (group_params->min_count != defaultFileParams.min_count) {
+  if (group_params->min_count != defaultFileParams.min_count
+      && file_params->min_count == defaultFileParams.min_count) {
     file_params->min_count = group_params->min_count;
   }
-  if (group_params->max_count != defaultFileParams.max_count) {
+  if (group_params->max_count != defaultFileParams.max_count
+      && file_params->max_count == defaultFileParams.max_count) {
     file_params->max_count = group_params->max_count;
   }
-  if (group_params->comment != defaultFileParams.comment) {
+  if (group_params->comment != defaultFileParams.comment
+      && file_params->comment == defaultFileParams.comment) {
     file_params->comment = group_params->comment;
   }
-  if (group_params->placehoder != defaultFileParams.placehoder) {
+  if (group_params->placehoder != defaultFileParams.placehoder
+      && file_params->placehoder == defaultFileParams.placehoder) {
     file_params->placehoder = group_params->placehoder;
   }
 }
@@ -738,9 +750,11 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
       continue;
     }
     auto file_params = parse_file_params(argv[i], group_params_list);
-    apply_key_column_to_file(&file_params);
     file_params_list->push_back(file_params);
   }
+
+  // only apply the first file's key columns to cut columns
+  apply_key_column_to_file(&file_params_list->at(0));
 }
 
 } // namespace filterx
