@@ -8,7 +8,7 @@ static GroupParams defaultGroupParams = {
   .key_types = {},
   .sort_order = {},
   .cut_columns = {},
-  .separator = '\0',
+  .separator = ',',
   .record_limit = -1,
   .must_exist = ExistConditionOptional,
   .min_count = 1,
@@ -19,7 +19,7 @@ static GroupParams defaultGroupParams = {
 
 static FileParams defaultFileParams = {
   .path = "",
-  .separator = '\0',
+  .separator = ',',
   .row_keys = {},
   .key_types = {},
   .sort_order = {},
@@ -101,7 +101,7 @@ typedef struct {
 } ParseAges;
 
 static ParseAges defaultParseAges = {
-  .separator = '\0',
+  .separator = ',',
   .comment = '#',
   .min_count = 1,
   .max_count = INT32_MAX,
@@ -478,19 +478,19 @@ check_file_params(FileParamsList* file_params_list) {
     }
     fclose(file);
     if (file_params.separator == '\0') {
-      fprintf(stderr, "file separator is empty\n");
+      fprintf(stderr, "file %s separator is empty\n", file_params.path.data());
       exit(EXIT_FAILURE);
     }
     if (file_params.row_keys.empty()) {
-      fprintf(stderr, "file row keys is empty\n");
+      fprintf(stderr, "file %s row keys is empty\n", file_params.path.data());
       exit(EXIT_FAILURE);
     }
     if (file_params.key_types.empty()) {
-      fprintf(stderr, "file key types is empty\n");
+      fprintf(stderr, "file %s key types is empty\n", file_params.path.data());
       exit(EXIT_FAILURE);
     }
     if (file_params.sort_order.empty()) {
-      fprintf(stderr, "file sort order is empty\n");
+      fprintf(stderr, "file %s sort order is empty\n", file_params.path.data());
       exit(EXIT_FAILURE);
     }
   }

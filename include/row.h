@@ -200,6 +200,16 @@ public:
       return this->value.int_value;
     }
     this->cached = true;
+    // check if can convert to int
+    int i = 0;
+    while (i < this->key.size()) {
+      if (this->key[i] < '0' || this->key[i] > '9') {
+        fprintf(stderr, "convert to int error: %s\n", this->key.data());
+        fprintf(stderr, "Check separator(s) or key type(k)\n");
+        exit(EXIT_FAILURE);
+      }
+      i++;
+    }
     auto v = std::stoll(std::string(this->key));
     this->error_code = errno;
     this->value.int_value = v;

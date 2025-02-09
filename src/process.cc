@@ -358,13 +358,11 @@ Processor::process() {
     for (int i = 1; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
         if (this->records[i]->get_exist() == ExistConditionMust) {
-          this->records[i]->set_status(RecordStatusNotPassExists);
           drop_all = true;
           break;
         }
       } else {
         if (this->records[i]->get_exist() == ExistConditionNot) {
-          this->records[i]->set_status(RecordStatusNotPassExists);
           drop_all = true;
           break;
         }
