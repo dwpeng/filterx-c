@@ -7,6 +7,9 @@ class Processor {
 public:
   Processor(ProcessorParams& params);
   ~Processor() {
+    for (auto record : this->records) {
+      delete record;
+    }
     if (this->output_file == stdout) {
       return;
     }
@@ -14,9 +17,6 @@ public:
       fflush(this->output_file);
       fclose(this->output_file);
       this->output_file = nullptr;
-    }
-    for (auto record : this->records) {
-      delete record;
     }
   }
   void add_record(Record* record);

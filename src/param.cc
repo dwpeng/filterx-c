@@ -41,6 +41,7 @@ create_record(FileParams* params) {
   record->set_record_limit(params->record_limit);
   record->set_count(params->min_count, params->max_count);
   record->set_comment(params->comment);
+  record->set_placehoder(params->placehoder);
   return record;
 }
 
