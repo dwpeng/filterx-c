@@ -43,8 +43,9 @@ jobs:
           strip zig-out/bin/filterx
           tar -czf filterx-linux-x86_64.tar.gz zig-out/bin/filterx
 
-      - name: Publish to Release
-        uses: softprops/action-gh-release@v1
+      - uses: ncipollo/release-action@v1.14.0
         with:
-          files: |
-            filterx-*.tar.gz
+          artifacts: "filterx-*.tar.gz"
+          allowUpdates: true
+          omitNameDuringUpdate: true
+          omitBodyDuringUpdate: true
