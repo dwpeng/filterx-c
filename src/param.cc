@@ -4,10 +4,10 @@
 namespace filterx {
 
 static GroupParams defaultGroupParams = {
-  .row_keys = { UINT32_MAX },
-  .key_types = { RowKeyTypeUnknown },
-  .sort_order = { RowKeySortOrderUnknown },
-  .cut_columns = { -1 },
+  .row_keys = {},
+  .key_types = {},
+  .sort_order = {},
+  .cut_columns = {},
   .separator = '\0',
   .record_limit = -1,
   .must_exist = ExistConditionOptional,
@@ -20,10 +20,10 @@ static GroupParams defaultGroupParams = {
 static FileParams defaultFileParams = {
   .path = "",
   .separator = '\0',
-  .row_keys = { UINT32_MAX },
-  .key_types = { RowKeyTypeUnknown },
-  .sort_order = { RowKeySortOrderUnknown },
-  .cut_columns = { -1 },
+  .row_keys = {},
+  .key_types = {},
+  .sort_order = {},
+  .cut_columns = {},
   .must_exist = ExistConditionOptional,
   .record_limit = -1,
   .min_count = 1,
@@ -98,8 +98,22 @@ typedef struct {
   std::vector<RowKeySortOrder> sort_order;
   std::vector<int> cut_columns;
   std::vector<int> group_numbers;
-
 } ParseAges;
+
+static ParseAges defaultParseAges = {
+  .separator = '\0',
+  .comment = '#',
+  .min_count = 1,
+  .max_count = INT32_MAX,
+  .record_limit = -1,
+  .placehoder = '-',
+  .exist = ExistConditionOptional,
+  .row_keys = {},
+  .key_types = {},
+  .sort_order = {},
+  .cut_columns = {},
+  .group_numbers = {},
+};
 
 static char SPERAATOR[] = { ',', ':', '\t', ' ' };
 
@@ -109,6 +123,9 @@ query_separator(const char* arg) {
     if (strchr(arg, SPERAATOR[i]) != nullptr) {
       return SPERAATOR[i];
     }
+  }
+  if (strlen(arg) == 1 && arg[0] == 't') {
+    return '\t';
   }
   return arg[0];
 }
@@ -163,7 +180,6 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
         idx++;
         continue;
       }
-
       std::string_view::size_type pos = 0;
       while (pos < value.size()) {
         std::string_view::size_type start = pos;
@@ -193,11 +209,13 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
           start--;
           end--;
           if (start > end) {
-            *error = "cut column start is greater than end";
-            return false;
-          }
-          for (int i = start; i <= end; i++) {
-            A->cut_columns.push_back(i);
+            for (int i = start; i >= end; i--) {
+              A->cut_columns.push_back(i);
+            }
+          } else {
+            for (int i = start; i <= end; i++) {
+              A->cut_columns.push_back(i);
+            }
           }
         }
         pos++;
@@ -230,30 +248,36 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
       }
     }
     char key = attr[0];
-    std::string_view value = attr.substr(2);
+    // find :
+    attr = attr.substr(2);
+    auto next_colon = attr.find(':');
+    if (next_colon == std::string_view::npos) {
+      next_colon = attr.size();
+    }
+    std::string_view value_slice = attr.substr(0, next_colon);
     switch (key) {
     case 's':
-      A->separator = query_separator(value.data());
+      A->separator = query_separator(std::string(value_slice).c_str());
       break;
     case 'c':
-      A->comment = value[0];
+      A->comment = value_slice[0];
       break;
     case 'm':
-      A->min_count = std::stoi(std::string(value));
+      A->min_count = std::stoi(std::string(value_slice));
       break;
     case 'M':
-      A->max_count = std::stoi(std::string(value));
+      A->max_count = std::stoi(std::string(value_slice));
       break;
     case 'l':
-      A->record_limit = std::stoi(std::string(value));
+      A->record_limit = std::stoi(std::string(value_slice));
       break;
     case 'p':
-      A->placehoder = value[0];
+      A->placehoder = value_slice[0];
       break;
     case 'e':
-      if (value == "Y") {
+      if (value_slice == "Y") {
         A->exist = ExistConditionMust;
-      } else if (value == "N") {
+      } else if (value_slice == "N") {
         A->exist = ExistConditionNot;
       } else {
         A->exist = ExistConditionOptional;
@@ -272,28 +296,27 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
 
       // col_number: pure number e.g. 1, 222, ...
       // type: f, i, s, F, I, S
-
       // parse keys
-
       std::string_view::size_type pos = 0;
-      while (pos < value.size()) {
+      while (pos < value_slice.size()) {
         std::string_view::size_type start = pos;
-        while (pos < value.size() && value[pos] >= '0' && value[pos] <= '9') {
+        while (pos < value_slice.size() && value_slice[pos] >= '0'
+               && value_slice[pos] <= '9') {
           pos++;
         }
-        std::string_view col = value.substr(start, pos - start);
+        std::string_view col = value_slice.substr(start, pos - start);
         if (col.empty()) {
           *error = "key column is empty";
           return false;
         }
         start = pos;
-        while (pos < value.size()
-               && (value[pos] == 'f' || value[pos] == 'i' || value[pos] == 's'
-                   || value[pos] == 'F' || value[pos] == 'I'
-                   || value[pos] == 'S')) {
+        while (pos < value_slice.size()
+               && (value_slice[pos] == 'f' || value_slice[pos] == 'i'
+                   || value_slice[pos] == 's' || value_slice[pos] == 'F'
+                   || value_slice[pos] == 'I' || value_slice[pos] == 'S')) {
           pos++;
         }
-        std::string_view type = value.substr(start, pos - start);
+        std::string_view type = value_slice.substr(start, pos - start);
         if (type.empty()) {
           *error = "key type is empty";
           return false;
@@ -337,7 +360,6 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
         A->row_keys.push_back(col_number - 1);
         A->key_types.push_back(key_type);
         A->sort_order.push_back(sort_order);
-        pos++;
       }
       break;
     }
@@ -352,16 +374,7 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
 
 FileParams
 parse_file_params(const char* arg, GroupParamsList* group_params_list) {
-  ParseAges A = {
-    .separator = ',',
-    .comment = '#',
-    .min_count = 1,
-    .max_count = INT32_MAX,
-    .record_limit = -1,
-    .placehoder = '-',
-    .exist = ExistConditionOptional,
-  };
-
+  ParseAges A = defaultParseAges;
   // parse path
   size_t len = strlen(arg);
   size_t idx = 0;
@@ -427,17 +440,7 @@ parse_file_params(const char* arg, GroupParamsList* group_params_list) {
 
 GroupParams
 parse_group_params(const char* arg) {
-  ParseAges A = {
-    .separator = ',',
-    .comment = '#',
-    .min_count = 1,
-    .max_count = INT32_MAX,
-    .record_limit = -1,
-    .placehoder = '-',
-    .cut_columns = {},
-    .group_numbers = {},
-  };
-
+  ParseAges A = defaultParseAges;
   std::string error;
   if (!parse_args(&A, arg, &error)) {
     fprintf(stderr, "parse group params error: %s\n", error.c_str());

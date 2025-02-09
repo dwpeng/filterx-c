@@ -66,7 +66,6 @@ public:
       this->separator_index.push_back(start);
       this->separator_index.push_back(length);
     }
-
     this->splited = true;
   }
 

@@ -107,6 +107,10 @@ public:
         this->record_status = RecordStatusEof;
         break;
       }
+      if(line.value()[0] == this->comment) {
+        continue;
+      }
+      // printf("line: %s\n", line.value().data());
       if (!this->row_buffer.add_row(const_cast<char*>(line.value().data()),
                                     this->data_provider->line_number)) {
         break;

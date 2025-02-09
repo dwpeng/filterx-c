@@ -140,45 +140,6 @@ Processor::flush_root_record_to_file() {
   }
 }
 
-bool
-find_rows_until_equal_primary_key(RowKey* primary_key, RowKey* other_key,
-                                  int* impossible_to_match) {
-  if (primary_key == nullptr || other_key == nullptr) {
-    return false;
-  }
-  assert(primary_key->size() == other_key->size());
-  int n_equal_keys = 0;
-  *impossible_to_match = 0;
-  for (int i = 0; i < primary_key->size(); i++) {
-    auto primary_key_item = primary_key->get_key(i).value_or(nullptr);
-    auto other_key_item = other_key->get_key(i).value_or(nullptr);
-    if (primary_key_item == nullptr || other_key_item == nullptr) {
-      return false;
-    }
-    if (primary_key_item->equals(other_key_item)) {
-      n_equal_keys++;
-    } else {
-      // 升序
-      if (primary_key_item->sort_order == RowKeySortOrderAsc) {
-        if (primary_key_item->small_than(other_key_item)) {
-          *impossible_to_match = 1;
-        }
-      } else {
-        // 降序
-        if (primary_key_item->big_than(other_key_item)) {
-          *impossible_to_match = 1;
-        }
-      }
-      return false;
-    }
-  }
-  if (n_equal_keys == primary_key->size()) {
-    return true;
-  }
-  assert("Should not reach here" && false);
-  return false;
-}
-
 void
 Processor::drop_all_records_and_update_next() {
   for (int i = 0; i < this->records.size(); i++) {
@@ -346,10 +307,7 @@ Processor::process() {
       if (other_top_key == nullptr) {
         break;
       }
-
-      int impossible_to_match = 0;
-      if (find_rows_until_equal_primary_key(root_record_keys, other_top_key,
-                                            &impossible_to_match)) {
+      if (root_record_keys->equals(other_top_key)) {
         this->records[0]->set_status(RecordStatusWaitOutput);
         for (int j = 0; j < topest_idx.size(); j++) {
           auto idx = topest_idx[j];
@@ -358,7 +316,8 @@ Processor::process() {
         }
         break;
       } else {
-        if (impossible_to_match) {
+        auto which_is_top = topest_of_2(root_record_keys, other_top_key);
+        if (which_is_top != root_record_keys) {
           for (int j = 0; j < topest_idx.size(); j++) {
             auto idx = topest_idx[j];
             other_records[idx]->set_status(RecordStatusUnavailable);
@@ -388,6 +347,9 @@ Processor::process() {
             stop = 1;
           }
           root_record_keys = get_key(this->records[0]);
+          if (root_record_keys == nullptr) {
+            break;
+          }
         }
       }
     }
