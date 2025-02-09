@@ -119,8 +119,6 @@ The above command means the file `file_path` will be applied with the filter `cu
 
 </details>
 
-<details>
-<summary>filterx -1 "k=2I:l=1:cut=2:p=$" 1.csv 2.csv 3.csv</summary>
 ```bash
 filterx -1 "k=2I:l=1:cut=2:p=$" 1.csv 2.csv 3.csv
 ```
@@ -136,15 +134,12 @@ Output:
 0       $       $
 ```
 
-</details>
-
-<details>
-<summary>filterx -1 "k=2I" -2 "cut=1:p=#" 1.csv:p=# 2.csv:2 3.csv:p=&:cut=2
-</summary>
 ```bash
 filterx -1 "k=2I" -2 "cut=1:p=#" 1.csv:p=# 2.csv:2 3.csv:p=&:cut=2
 ```
+
 Output:
+
 ```csv
 68      2       68
 68      2       &
@@ -157,14 +152,13 @@ Output:
 2       *       &
 0       *       &
 ```
-</details>
 
-<details>
-<summary>filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 3.csv:p=&:2 -cnt 3</summary>
 ```bash
 filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 3.csv:p=&:2 -cnt 3
 ```
+
 Output:
+
 ```csv
 68      2       68      7       68
 68      2       68      7       &
@@ -173,20 +167,18 @@ Output:
 5       2       5       6       5
 3       2       3       *       3
 ```
-</details>
 
-<details>
-<summary>filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 3.csv:p=&:2 -cnt 2</summary>
 ```bash
 filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 3.csv:p=&:2 -cnt 2
 ```
+
 Output:
+
 ```csv
 4       *       *       *       3       4       &
 2       2       2       *       &       &       &
 2       *       *       *       &       &       &
 ```
-</details>
 
 #### Query same variant-point in vcf files
 
@@ -323,10 +315,6 @@ Output:
 
 Find the same variant-point that occurs in at least 2 files.
 
-<details>
-
-<summary>filterx -1 "k=1i2i:s=t" 2.vcf:cut=1 1.vcf 3.vcf -cnt 2,</summary>
-
 ```bash
 filterx -1 "k=1i2i:s=t" 2.vcf:cut=1 1.vcf 3.vcf -cnt 2,
 ```
@@ -349,5 +337,3 @@ Output:
 3       3212016
 4       3258448
 ```
-
-</details>
