@@ -1,16 +1,7 @@
+#include "param.h"
 #include "record.h"
 
 namespace filterx {
-
-struct ProcessorParams {
-  uint32_t min_count;
-  uint32_t max_count;
-  float fmin_count;
-  float fmax_count;
-  char output_separator;
-  char placehoder;
-  char* output_path;
-};
 
 class Processor {
 public:
@@ -24,14 +15,15 @@ public:
       fclose(this->output_file);
       this->output_file = nullptr;
     }
+    for (auto record : this->records) {
+      delete record;
+    }
   }
-
   void add_record(Record* record);
   void prepare();
-  void flush_add_records_to_file();
+  void flush_all_records_to_file();
   void flush_root_record_to_file();
   void drop_all_records_and_update_next();
-
   void process();
 
 private:

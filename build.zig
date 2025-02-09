@@ -52,6 +52,7 @@ pub fn build(b: *std.Build) void {
             "main.cc",
             "data_provider.cc",
             "process.cc",
+            "param.cc",
         },
         .flags = &[_][]const u8{
             "-std=c++17",

@@ -4,13 +4,13 @@
 namespace filterx {
 
 Processor::Processor(ProcessorParams& params) : params(params) {
-  if (strcmp(params.output_path, "-") == 0) {
+  if (strcmp(params.output_path.c_str(), "-") == 0) {
     this->output_file = stdout;
     return;
   }
-  this->output_file = fopen(params.output_path, "w");
+  this->output_file = fopen(params.output_path.c_str(), "w");
   if (this->output_file == nullptr) {
-    fprintf(stderr, "Failed to open file: %s\n", params.output_path);
+    fprintf(stderr, "Failed to open file: %s\n", params.output_path.c_str());
     fflush(stderr);
     exit(EXIT_FAILURE);
   }
@@ -19,7 +19,7 @@ Processor::Processor(ProcessorParams& params) : params(params) {
 void
 Processor::add_record(Record* record) {
   if (this->records.empty()) {
-    record->set_must_exist(true);
+    record->set_must_exist(ExistConditionMust);
   }
   this->records.push_back(record);
 }
@@ -46,7 +46,7 @@ Processor::prepare() {
 }
 
 void
-Processor::flush_add_records_to_file() {
+Processor::flush_all_records_to_file() {
   int max_rows = 0;
   for (int i = 0; i < this->records.size(); i++) {
     if (this->records[i]->status() != RecordStatusWaitOutput) {
@@ -56,8 +56,7 @@ Processor::flush_add_records_to_file() {
     if (record->get_cut_columns().empty()) {
       continue;
     }
-    auto buffer = record->buffer();
-    auto nrows = buffer->size();
+    auto nrows = record->get_record_limit();
     if (nrows > max_rows) {
       max_rows = nrows;
     }
@@ -66,8 +65,9 @@ Processor::flush_add_records_to_file() {
     for (int i = 0; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
         auto cut = this->records[i]->get_cut_columns();
+        char placehoder = this->records[i]->get_placehoder();
         for (int j = 0; j < cut.size(); j++) {
-          fprintf(this->output_file, "%c%c", this->params.placehoder,
+          fprintf(this->output_file, "%c%c", placehoder,
                   this->params.output_separator);
         }
         continue;
@@ -75,17 +75,16 @@ Processor::flush_add_records_to_file() {
       auto record = this->records[i];
       auto buffer = record->buffer();
       auto cut = record->get_cut_columns();
-      if (n >= buffer->size()) {
+      if (n >= record->get_record_limit()) {
+        char placehoder = record->get_placehoder();
         for (int j = 0; j < cut.size(); j++) {
-          fprintf(this->output_file, "%c%c", this->params.placehoder,
+          fprintf(this->output_file, "%c%c", placehoder,
                   this->params.output_separator);
         }
         continue;
       }
       auto row = buffer->get_row(n).value_or(nullptr);
-      if (row == nullptr) {
-        continue;
-      }
+      char placehoder = record->get_placehoder();
       for (int j = 0; j < cut.size(); j++) {
         auto item = row->get_item(cut[j]);
         if (item.has_value()) {
@@ -93,7 +92,7 @@ Processor::flush_add_records_to_file() {
           fprintf(this->output_file, "%s%c", item_value.data(),
                   this->params.output_separator);
         } else {
-          fprintf(this->output_file, "%c%c", this->params.placehoder,
+          fprintf(this->output_file, "%c%c", placehoder,
                   this->params.output_separator);
         }
       }
@@ -110,11 +109,12 @@ Processor::flush_root_record_to_file() {
   auto record = this->records[0];
   auto buffer = record->buffer();
   auto cut = record->get_cut_columns();
-  for (int n = 0; n < buffer->size(); n++) {
+  for (int n = 0; n < record->get_record_limit(); n++) {
     auto row = buffer->get_row(n).value_or(nullptr);
     if (row == nullptr) {
       continue;
     }
+    char placehoder = record->get_placehoder();
     for (int j = 0; j < cut.size(); j++) {
       auto item = row->get_item(cut[j]);
       if (item.has_value()) {
@@ -122,7 +122,7 @@ Processor::flush_root_record_to_file() {
         fprintf(this->output_file, "%s%c", item_value.data(),
                 this->params.output_separator);
       } else {
-        fprintf(this->output_file, "%c%c", this->params.placehoder,
+        fprintf(this->output_file, "%c%c", placehoder,
                 this->params.output_separator);
       }
     }
@@ -130,7 +130,7 @@ Processor::flush_root_record_to_file() {
     for (int i = 1; i < this->records.size(); i++) {
       auto cut = this->records[i]->get_cut_columns();
       for (int j = 0; j < cut.size(); j++) {
-        fprintf(this->output_file, "%c%c", this->params.placehoder,
+        fprintf(this->output_file, "%c%c", placehoder,
                 this->params.output_separator);
       }
     }
@@ -184,7 +184,7 @@ Processor::drop_all_records_and_update_next() {
   for (int i = 0; i < this->records.size(); i++) {
     auto s = this->records[i]->status();
     if (s == RecordStatusWaitOutput || s == RecordStatusNotPassCondition
-        || s == RecordStatusUnavailable || s == RecordStatusNotExists) {
+        || s == RecordStatusUnavailable || s == RecordStatusNotPassExists) {
       this->records[i]->next();
     }
   }
@@ -327,7 +327,7 @@ Processor::process() {
   auto other_records = this->records;
   // remove the root record
   other_records.erase(other_records.begin());
-
+  uint32_t ouput_number = 0;
   auto topest_idx = std::vector<int>{};
   assert(this->records.size() > 0);
   while (1) {
@@ -337,7 +337,6 @@ Processor::process() {
       break;
     }
     records[0]->set_status(RecordStatusWaitOutput);
-
     c++;
     int stop = 0;
     while (!stop) {
@@ -376,6 +375,11 @@ Processor::process() {
                 && fc >= this->params.fmin_count
                 && fc <= this->params.fmax_count) {
               this->flush_root_record_to_file();
+              ouput_number++;
+              if (this->params.output_limit > 0
+                  && ouput_number >= this->params.output_limit) {
+                return;
+              }
             }
           }
           this->records[0]->set_status(RecordStatusUnavailable);
@@ -389,10 +393,16 @@ Processor::process() {
     }
 
     bool drop_all = false;
-    for (int i = 0; i < this->records.size(); i++) {
+    for (int i = 1; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
-        if (i > 1 && this->records[i]->is_must_exist()) {
-          this->records[i]->set_status(RecordStatusNotExists);
+        if (this->records[i]->get_exist() == ExistConditionMust) {
+          this->records[i]->set_status(RecordStatusNotPassExists);
+          drop_all = true;
+          break;
+        }
+      } else {
+        if (this->records[i]->get_exist() == ExistConditionNot) {
+          this->records[i]->set_status(RecordStatusNotPassExists);
           drop_all = true;
           break;
         }
@@ -403,6 +413,7 @@ Processor::process() {
       this->drop_all_records_and_update_next();
       continue;
     }
+
     // check if the number of records is within the range
     if (c < this->params.min_count || c > this->params.max_count) {
       this->drop_all_records_and_update_next();
@@ -413,7 +424,12 @@ Processor::process() {
       this->drop_all_records_and_update_next();
       continue;
     }
-    this->flush_add_records_to_file();
+    this->flush_all_records_to_file();
+    ouput_number++;
+    if (this->params.output_limit > 0
+        && ouput_number >= this->params.output_limit) {
+      return;
+    }
 
     for (int i = 0; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {

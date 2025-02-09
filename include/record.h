@@ -15,8 +15,14 @@ enum RecordStatus {
   RecordStatusNotPassCondition = 4,
   RecordStatusUnavailable = 5,
   RecordStatusWaitOutput = 6,
-  RecordStatusNotExists = 7,
+  RecordStatusNotPassExists = 7,
   RecordStatusEof = 8,
+};
+
+enum ExistCondition {
+  ExistConditionOptional = 0,
+  ExistConditionMust = 1,
+  ExistConditionNot = 2,
 };
 
 class Record {
@@ -29,7 +35,7 @@ public:
     this->data_provider = createDataProvider(path);
     this->min_count = 1;
     this->max_count = INT32_MAX;
-    this->must_exist = false;
+    this->must_exist = ExistConditionOptional;
     this->cut_columns = std::vector<int>();
   }
   Record(std::string& path, char separator, std::vector<uint32_t>& row_keys,
@@ -69,12 +75,12 @@ public:
   }
 
   void
-  set_must_exist(bool must_exist) {
+  set_must_exist(ExistCondition must_exist) {
     this->must_exist = must_exist;
   }
 
-  bool
-  is_must_exist() {
+  ExistCondition
+  get_exist() {
     return this->must_exist;
   }
 
@@ -158,7 +164,7 @@ public:
            || this->record_status == RecordStatusNotPassCondition
            || this->record_status == RecordStatusUnavailable
            || this->record_status == RecordStatusWaitOutput
-           || this->record_status == RecordStatusNotExists);
+           || this->record_status == RecordStatusNotPassExists);
     this->row_buffer.consume();
     if (this->row_buffer.size() == 0) {
       this->record_status = RecordStatusEmpty;
@@ -202,6 +208,42 @@ public:
     this->record_status = status;
   }
 
+  void
+  set_record_limit(int limit) {
+    this->record_limit = limit;
+  }
+
+  int
+  get_record_limit() {
+    if (this->record_limit == -1) {
+      return this->row_buffer.size();
+    }
+    if (this->record_limit > this->row_buffer.size()) {
+      return this->row_buffer.size();
+    }
+    return this->record_limit;
+  }
+
+  void
+  set_comment(char comment) {
+    this->comment = comment;
+  }
+
+  char
+  get_comment() {
+    return this->comment;
+  }
+
+  void
+  set_placehoder(char placehoder) {
+    this->placehoder = placehoder;
+  }
+
+  char
+  get_placehoder() {
+    return this->placehoder;
+  }
+
 private:
   uint32_t min_count;
   uint32_t max_count;
@@ -210,7 +252,10 @@ private:
   DataProvider* data_provider;
   RecordStatus record_status = RecordStatusEmpty;
   std::vector<int> cut_columns;
-  bool must_exist;
+  ExistCondition must_exist;
+  int record_limit = -1;
+  char comment = '#';
+  char placehoder = '-';
 };
 
 } // namespace filterx

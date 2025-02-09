@@ -140,11 +140,13 @@ enum RowKeyType {
   RowKeyTypeFloat = 1 << 0,
   RowKeyTypeInt = 1 << 1,
   RowKeyTypeString = 1 << 2,
+  RowKeyTypeUnknown = 1 << 3,
 };
 
 enum RowKeySortOrder {
   RowKeySortOrderAsc = 1 << 0,
   RowKeySortOrderDesc = 1 << 1,
+  RowKeySortOrderUnknown = 1 << 2,
 };
 
 class TypedKey {
