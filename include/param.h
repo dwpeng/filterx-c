@@ -9,12 +9,12 @@
 namespace filterx {
 
 struct GroupParams {
-  std::vector<uint32_t> keys;
+  std::vector<uint32_t> row_keys;
   std::vector<RowKeyType> key_types;
   std::vector<RowKeySortOrder> sort_order;
   std::vector<int> cut_columns;
   char separator;
-  int output_limit;
+  int record_limit;
   ExistCondition must_exist;
   int min_count;
   int max_count;

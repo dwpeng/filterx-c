@@ -4,12 +4,12 @@
 namespace filterx {
 
 static GroupParams defaultGroupParams = {
-  .keys = { UINT32_MAX },
+  .row_keys = { UINT32_MAX },
   .key_types = { RowKeyTypeUnknown },
   .sort_order = { RowKeySortOrderUnknown },
   .cut_columns = { -1 },
   .separator = '\0',
-  .output_limit = -1,
+  .record_limit = -1,
   .must_exist = ExistConditionOptional,
   .min_count = 1,
   .max_count = INT32_MAX,
@@ -48,37 +48,37 @@ create_record(FileParams* params) {
 void
 apply_group_to_file(FileParams* file_params, GroupParams* group_params) {
   // if not set, use the group configuration
-  if (file_params->separator == defaultFileParams.separator) {
+  if (group_params->separator != defaultFileParams.separator) {
     file_params->separator = group_params->separator;
   }
-  if (file_params->row_keys == defaultFileParams.row_keys) {
-    file_params->row_keys = group_params->keys;
+  if (group_params->row_keys != defaultFileParams.row_keys) {
+    file_params->row_keys = group_params->row_keys;
   }
-  if (file_params->key_types == defaultFileParams.key_types) {
+  if (group_params->key_types != defaultFileParams.key_types) {
     file_params->key_types = group_params->key_types;
   }
-  if (file_params->sort_order == defaultFileParams.sort_order) {
+  if (group_params->sort_order != defaultFileParams.sort_order) {
     file_params->sort_order = group_params->sort_order;
   }
-  if (file_params->cut_columns == defaultFileParams.cut_columns) {
+  if (group_params->cut_columns != defaultFileParams.cut_columns) {
     file_params->cut_columns = group_params->cut_columns;
   }
-  if (file_params->must_exist == defaultFileParams.must_exist) {
+  if (group_params->must_exist != defaultFileParams.must_exist) {
     file_params->must_exist = group_params->must_exist;
   }
-  if (file_params->record_limit == defaultFileParams.record_limit) {
-    file_params->record_limit = group_params->output_limit;
+  if (group_params->record_limit != defaultFileParams.record_limit) {
+    file_params->record_limit = group_params->record_limit;
   }
-  if (file_params->min_count == defaultFileParams.min_count) {
+  if (group_params->min_count != defaultFileParams.min_count) {
     file_params->min_count = group_params->min_count;
   }
-  if (file_params->max_count == defaultFileParams.max_count) {
+  if (group_params->max_count != defaultFileParams.max_count) {
     file_params->max_count = group_params->max_count;
   }
-  if (file_params->comment == defaultFileParams.comment) {
+  if (group_params->comment != defaultFileParams.comment) {
     file_params->comment = group_params->comment;
   }
-  if (file_params->placehoder == defaultFileParams.placehoder) {
+  if (group_params->placehoder != defaultFileParams.placehoder) {
     file_params->placehoder = group_params->placehoder;
   }
 }
@@ -208,15 +208,6 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
 
     // if attr contains =
     if (attr.find('=') == std::string::npos) {
-      if (attr.size() < 3) {
-        *error = "attribute is too short";
-        return false;
-      }
-      if (attr[1] != '=') {
-        *error = "attribute is invalid";
-        return false;
-      }
-    } else {
       // group number, pure number
       if (attr[0] >= '0' && attr[0] <= '9') {
         int group_number = std::stoi(std::string(attr));
@@ -227,6 +218,15 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
         A->group_numbers.push_back(group_number);
         idx++;
         continue;
+      } else {
+        if (attr.size() < 3) {
+          *error = "attribute is too short";
+          return false;
+        }
+        if (attr[1] != '=') {
+          *error = "attribute is invalid";
+          return false;
+        }
       }
     }
     char key = attr[0];
@@ -452,7 +452,7 @@ parse_group_params(const char* arg) {
   group_params.cut_columns = A.cut_columns;
   group_params.must_exist = A.exist;
   if (A.row_keys.size() > 0) {
-    group_params.keys = A.row_keys;
+    group_params.row_keys = A.row_keys;
     group_params.key_types = A.key_types;
     group_params.sort_order = A.sort_order;
   }
