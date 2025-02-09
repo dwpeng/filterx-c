@@ -1,15 +1,15 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -24,10 +24,27 @@ jobs:
           version: 0.13.0
       - if: matrix.os == 'windows-latest'
         name: Build
-        run: zig build -Doptimize=ReleaseFast -j4
+        run: |
+          zig build -Doptimize=ReleaseFast -j4
+          strip zig-out/bin/filterx.exe
+          tar -czf filterx-windows-x86_64.tar.gz zig-out/bin/filterx.exe
+
       - if: matrix.os == 'macos-latest'
         name: Build
-        run: zig build -Doptimize=ReleaseFast -j4
+        run: |
+          zig build -Doptimize=ReleaseFast -j4
+          strip zig-out/bin/filterx
+          tar -czf filterx-macos-x86_64.tar.gz zig-out/bin/filterx
+
       - if: matrix.os == 'ubuntu-latest'
         name: Build
-        run: zig build -Dtarget="x86_64-linux-gnu.2.17" -Doptimize=ReleaseFast -j4
+        run: |
+          zig build -Dtarget="x86_64-linux-gnu.2.17" -Doptimize=ReleaseFast -j4 
+          strip zig-out/bin/filterx
+          tar -czf filterx-linux-x86_64.tar.gz zig-out/bin/filterx
+
+      - name: Publish to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            filterx-*.tar.gz
