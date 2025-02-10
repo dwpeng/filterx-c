@@ -235,6 +235,24 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
       idx++;
       continue;
     }
+    // parse req
+    // the alias of exist
+    if(attr.size() > 4 && attr[0] == 'r' && attr[1] == 'e' && attr[2] == 'q') {
+      std::string_view value = attr.substr(4);
+      if (value.empty()) {
+        idx++;
+        continue;
+      }
+      if (value == "Y") {
+        A->exist = ExistConditionMust;
+      } else if (value == "N") {
+        A->exist = ExistConditionNot;
+      } else {
+        A->exist = ExistConditionOptional;
+      }
+      idx++;
+      continue;
+    }
 
     // if attr contains =
     if (attr.find('=') == std::string::npos) {
@@ -285,15 +303,6 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
       break;
     case 'p':
       A->placehoder = value_slice[0];
-      break;
-    case 'e':
-      if (value_slice == "Y") {
-        A->exist = ExistConditionMust;
-      } else if (value_slice == "N") {
-        A->exist = ExistConditionNot;
-      } else {
-        A->exist = ExistConditionOptional;
-      }
       break;
     case 'k': {
       // parse keys
@@ -560,7 +569,7 @@ help() {
   fprintf(stderr, "  l=<record_limit> Record limit, default is -1\n");
   fprintf(stderr, "  p=<placehoder>   Placehoder, default is -\n");
   fprintf(stderr,
-          "  e=[Y|N]        Y: must exist, N: not exist, default is either\n");
+          "  req=[Y|N]        Y: must exist, N: not exist, default is either\n");
   fprintf(stderr, "  k=<key>          Key, e.g. 1f2i3S\n");
   fprintf(
       stderr,
