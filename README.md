@@ -7,7 +7,7 @@ A simple and lightweight library for filtering tabular data with a simple and in
 1. Manual installation:
 
 ```bash
-git clone https://github.com/dwpeng/filterx-c
+git clone https://github.com/dwpeng/filterx-c --recursive
 cd filterx-c
 xmake
 ```
