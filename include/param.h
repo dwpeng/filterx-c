@@ -78,6 +78,8 @@ struct ProcessorParams {
   std::string output_path;
   int output_limit;
   char output_separator;
+  bool row_mode;
+  bool full_mode;
 };
 
 extern ProcessorParams defaultProcessorParams;

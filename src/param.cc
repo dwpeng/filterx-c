@@ -41,6 +41,8 @@ ProcessorParams defaultProcessorParams = {
   .output_path = std::string("-"),
   .output_limit = -1,
   .output_separator = '\t',
+  .row_mode = false,
+  .full_mode = false,
 };
 
 Record*
@@ -576,22 +578,25 @@ void
 help() {
   fprintf(stderr, "Usage: filterx [options] [file:attribute]\n");
   fprintf(stderr, "Options:\n");
-  fprintf(stderr, "  -[1-9]+ <group>  Group filter conditions\n");
+  fprintf(stderr, "  -[1-9]+ <group>   Group filter conditions\n");
   fprintf(stderr,
-          "  -L <limit>       Output [L] record limit, default is -1\n");
-  fprintf(stderr, "  -o, --output <file>  Output file, default is stdout\n");
-  fprintf(stderr, "  -s, --separator <separator>  Separator, default is ,\n");
-  fprintf(stderr, "  -h, --help       Show this help message\n");
+          "  -L <limit>        Output [L] record limit, default is -1\n");
+  fprintf(stderr, "  -R                Row mode, default is column mode\n");
+  fprintf(stderr, "  -F                Full mode, output all columns, only "
+                  "available in row mode\n");
+  fprintf(stderr, "  -o  <file>        Output file, default is stdout\n");
+  fprintf(stderr, "  -s  <separator>   Separator, default is ,\n");
+  fprintf(stderr, "  -h, --help        Show this help message\n");
   fprintf(stderr, "  -cnt=<min>,<max>  Count range, default is 1,2147483647\n");
   fprintf(stderr,
           "  -freq=<min>,<max> Frequency range, default is 0.0001,1.0\n");
   fprintf(stderr, "List of attributes:\n");
-  fprintf(stderr, "  s=<separator>    Separator, default is ,\n");
-  fprintf(stderr, "  c=<comment>      Comment, default is #\n");
-  fprintf(stderr, "  m=<min_count>    Min count, default is 1\n");
-  fprintf(stderr, "  M=<max_count>    Max count, default is 2147483647\n");
-  fprintf(stderr, "  l=<record_limit> Record limit, default is -1\n");
-  fprintf(stderr, "  p=<placehoder>   Placehoder, default is -\n");
+  fprintf(stderr, "  s=<separator>     Separator, default is ,\n");
+  fprintf(stderr, "  c=<comment>       Comment, default is #\n");
+  fprintf(stderr, "  m=<min_count>     Min count, default is 1\n");
+  fprintf(stderr, "  M=<max_count>     Max count, default is 2147483647\n");
+  fprintf(stderr, "  l=<record_limit>  Record limit, default is -1\n");
+  fprintf(stderr, "  p=<placehoder>    Placehoder, default is -\n");
   fprintf(
       stderr,
       "  req=[Y|N]        Y: must exist, N: not exist, default is either\n");
@@ -603,9 +608,9 @@ help() {
           "    f: float, i: int, s: string (ascending) from small to large\n");
   fprintf(stderr,
           "    F: float, I: int, S: string (descending) from large to small\n");
-  fprintf(stderr, "  cut=<columns>    Cut columns, e.g. 1,2,3,4 or 1,2-6 "
-                  "default only output key columns\n");
-  fprintf(stderr, "  <group>          Group number, default is all\n");
+  fprintf(stderr,
+          "  cut=<columns>     Columns of outputed, default is key columns\n");
+  fprintf(stderr, "  <group>           Group number, default is all\n");
   fprintf(stderr, "Examples:\n");
   fprintf(stderr, "  filterx -1 \"k=1s:cut=1,2,3,4\" "
                   "file1\n");
@@ -642,12 +647,12 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
       continue;
     }
     // output_separator
-    if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--separator") == 0) {
+    if (strcmp(argv[i], "-s") == 0) {
       processor_params->output_separator = query_separator(argv[i + 1]);
       i++;
       continue;
     }
-    if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
+    if (strcmp(argv[i], "-o") == 0) {
       processor_params->output_path = argv[i + 1];
       i++;
       continue;
@@ -655,6 +660,14 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       help();
       exit(EXIT_SUCCESS);
+    }
+    if (strcmp(argv[i], "-R") == 0) {
+      processor_params->row_mode = true;
+      continue;
+    }
+    if (strcmp(argv[i], "-F") == 0) {
+      processor_params->full_mode = true;
+      continue;
     }
 
     // parse -cnt=1,100 or -cnt=1, or -cnt=,100
@@ -792,6 +805,9 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
   // parse file params
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
+      if (i + 1 < argc && argv[i + 1][0] == '-') {
+        continue;
+      }
       i++;
       continue;
     }

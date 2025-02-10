@@ -22,10 +22,12 @@ public:
   void add_record(Record* record);
   void prepare();
   void flush_all_records_to_file();
+  void flush_all_records_to_file_row_mode();
   void drop_all_records_and_update_next();
   void process();
 
 private:
+  std::string output_buffer;
   FILE* output_file;
   std::vector<Record*> records;
   ProcessorParams params;

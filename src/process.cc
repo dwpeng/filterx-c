@@ -1,5 +1,4 @@
 #include "process.h"
-#include <set>
 
 namespace filterx {
 
@@ -18,9 +17,6 @@ Processor::Processor(ProcessorParams& params) : params(params) {
 
 void
 Processor::add_record(Record* record) {
-  if (this->records.empty()) {
-    record->set_must_exist(ExistConditionMust);
-  }
   this->records.push_back(record);
 }
 
@@ -45,6 +41,7 @@ Processor::prepare() {
   }
 }
 
+// column mode
 void
 Processor::flush_all_records_to_file() {
   int max_rows = 0;
@@ -61,14 +58,18 @@ Processor::flush_all_records_to_file() {
       max_rows = nrows;
     }
   }
+  auto output_buffer = this->output_buffer;
+  output_buffer.clear();
   for (int n = 0; n < max_rows; n++) {
     for (int i = 0; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
         auto cut = this->records[i]->get_cut_columns();
         char placehoder = this->records[i]->get_placehoder();
         for (int j = 0; j < cut.size(); j++) {
-          fprintf(this->output_file, "%c%c", placehoder,
-                  this->params.output_separator);
+          // fprintf(this->output_file, "%c%c", placehoder,
+          //         this->params.output_separator);
+          output_buffer.push_back(placehoder);
+          output_buffer.push_back(this->params.output_separator);
         }
         continue;
       }
@@ -78,8 +79,10 @@ Processor::flush_all_records_to_file() {
       if (n >= record->get_record_limit()) {
         char placehoder = record->get_placehoder();
         for (int j = 0; j < cut.size(); j++) {
-          fprintf(this->output_file, "%c%c", placehoder,
-                  this->params.output_separator);
+          // fprintf(this->output_file, "%c%c", placehoder,
+          //         this->params.output_separator);
+          output_buffer.push_back(placehoder);
+          output_buffer.push_back(this->params.output_separator);
         }
         continue;
       }
@@ -89,17 +92,71 @@ Processor::flush_all_records_to_file() {
         auto item = row->get_item(cut[j]);
         if (item.has_value()) {
           auto item_value = item.value();
-          fprintf(this->output_file, "%s%c", item_value.data(),
-                  this->params.output_separator);
+          // fprintf(this->output_file, "%s%c", item_value.data(),
+          //         this->params.output_separator);
+          output_buffer.append(item_value.data());
+          output_buffer.push_back(this->params.output_separator);
         } else {
-          fprintf(this->output_file, "%c%c", placehoder,
-                  this->params.output_separator);
+          // fprintf(this->output_file, "%c%c", placehoder,
+          //         this->params.output_separator);
+          output_buffer.push_back(placehoder);
+          output_buffer.push_back(this->params.output_separator);
         }
       }
     }
-    // remove the last separator
-    fseek(this->output_file, -1, SEEK_CUR);
-    fprintf(this->output_file, "\n");
+    // change the last separator to newline
+    output_buffer.pop_back();
+    output_buffer.push_back('\n');
+    fwrite(output_buffer.data(), 1, output_buffer.size(), this->output_file);
+  }
+}
+
+// row mode
+void
+Processor::flush_all_records_to_file_row_mode() {
+  auto output_buffer = this->output_buffer;
+  output_buffer.clear();
+  for (int i = 0; i < this->records.size(); i++) {
+    if (this->records[i]->status() != RecordStatusWaitOutput) {
+      continue;
+    }
+    auto record = this->records[i];
+    auto buffer = record->buffer();
+    auto nrows = record->get_record_limit();
+    auto placehoder = record->get_placehoder();
+    auto cut = record->get_cut_columns();
+    for (int n = 0; n < nrows; n++) {
+      auto row = buffer->get_row(n).value_or(nullptr);
+      int ncol = cut.size();
+      if (this->params.full_mode) {
+        ncol = row->size();
+      }
+      for (int j = 0; j < ncol; j++) {
+        int item_index;
+        if (this->params.full_mode) {
+          item_index = j;
+        } else {
+          item_index = cut[j];
+        }
+        auto item = row->get_item(item_index);
+        if (item.has_value()) {
+          auto item_value = item.value();
+          // fprintf(this->output_file, "%s%c", item_value.data(),
+          //         this->params.output_separator);
+          output_buffer.append(item_value.data());
+          output_buffer.push_back(this->params.output_separator);
+        } else {
+          // fprintf(this->output_file, "%c%c", record->get_placehoder(),
+          //         this->params.output_separator);
+          output_buffer.push_back(record->get_placehoder());
+          output_buffer.push_back(this->params.output_separator);
+        }
+      }
+      // change the last separator to newline
+      output_buffer.pop_back();
+      output_buffer.push_back('\n');
+      fwrite(output_buffer.data(), 1, output_buffer.size(), this->output_file);
+    }
   }
 }
 
@@ -289,7 +346,11 @@ Processor::process() {
       this->drop_all_records_and_update_next();
       continue;
     }
-    this->flush_all_records_to_file();
+    if (this->params.row_mode) {
+      this->flush_all_records_to_file_row_mode();
+    } else {
+      this->flush_all_records_to_file();
+    }
     ouput_number++;
     if (this->params.output_limit > 0
         && ouput_number >= this->params.output_limit) {
