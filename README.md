@@ -35,16 +35,16 @@ filterx supports the following filter conditions:
 - `M=[Number]`: means the file contains N-related key-different rows, default is UINT32_MAX.
 - `k=1s2i3I`: means choose the first column as string, the second column as int, and the third column as int. Lowercase means the column is ascending, and uppercase means the column is descending.
 - `[Number]`: means the number of the group-id, `1` means the group-id is 1. The group which id is 1 will be applied to all files defaultly.
-- `p=[Char]`: means the placeholder of the output file, each file can have a different placeholder, default is `-`.
-- `s=[Char]`: means the separator of the input file, default is `,`.
+- `p=[Char]`: means the placeholder of the output file, each file can have a different placeholder, default is `-`. If the placeholder is `*` or `&`, you need add `\` before it like `\*` or `\&`. Or you can add `" "` to the group filter like `-2 "p=*"`.
+- `s=[Char]`: means the separator of the input file, default is `\t`.
 - `l=[Number]`: means the limit of every record, for example, `l=10` means the maximum number of rows in each record will be ouputed, if there are more than 10 rows with the same key
-- `e=[Y|N]`: means whether the record contains the file. For example, `file:e=N` means only records that do not contain the file will be outputed.
+- `req=[Y|N]`: means whether the record contains the file. For example, `file:req=N` means only records that do not contain the file will be outputed.
 - `c=[Number]`: means the comment line number of the input file, default is #. The comment line will be ignored.
-- `cut=[Number]-[Number]`: means the column range of the input file, for example, `cut=1-3` means col1, col2, col3 will be outputed. `cut=3-1` means col3, col2, col1 will be outputed.
+- `cut=[Number]-[Number]`: means the column range of the input file, for example, `cut=1-3` means col1, col2, col3 will be outputed. `cut=3-1` means col3, col2, col1 will be outputed. `cut=` means no column will be outputed.
 
 Except for the above filter conditions, filterx also supports the following filter conditions for the process filter:
 
-- `-cnt [Number],[Number]`: means the number of the group-id and the number of the record-id, for example, `-cnt 1,2` means only records occur at least 1 files and at most 2 files will be outputed, default is 1,UINT32_MAX
+- `-cnt [Number],[Number]`: means the number of the group-id and the number of the record-id, for example, `-cnt 1,2` means only records occur at least 1 files and at most 2 files will be outputed, default is 1,UINT32_MAX. `-cnt 1` means only records occur exactly 1 file will be outputed.
 - `-freq [Float],[Float]`: means the frequency of the group-id and the frequency of the record-id, for example, `-freq 0.5,0.8` means only records occur at least 50% files and at most 80% files will be outputed, default is 0.0001,1.0
 - `-L [Number]`: means the limit of the records, for example, `-L 10` means only the top 10 records will be outputed.
 - `-s [Char]`: means the separator of the output file, default is `\t`.
@@ -69,9 +69,9 @@ file_path:cut=1-2:m=2:p=@:s=,:1:2
 
 The above command means the file `file_path` will be applied with the filter `cut=1-2:m=2:p=@:s=,:1:2`.
 
-### Example
+## Example
 
-#### Simple csv example
+### Simple csv example
 
 <details>
 <summary>1.csv</summary>
@@ -120,7 +120,7 @@ The above command means the file `file_path` will be applied with the filter `cu
 </details>
 
 ```bash
-filterx -1 "k=2I:l=1:cut=2:p=$" 1.csv 2.csv 3.csv
+filterx -1 "k=2I:l=1:cut=2:p=$:s=," 1.csv 2.csv 3.csv
 ```
 
 Output:
@@ -135,7 +135,7 @@ Output:
 ```
 
 ```bash
-filterx -1 "k=2I" -2 "cut=1:p=#" 1.csv:p=# 2.csv:2 3.csv:p=&:cut=2
+filterx -1 "k=2I:s=," -2 "cut=1:p=#" 1.csv:p=# 2.csv:2 "3.csv:p=&:cut=2"
 ```
 
 Output:
@@ -143,33 +143,33 @@ Output:
 ```csv
 68      2       68
 68      2       &
-68      *       &
-68      *       &
+68      #       &
+68      #       &
 5       2       5
-4       *       4
+4       #       4
 3       2       3
 2       2       &
-2       *       &
-0       *       &
+2       #       &
+0       #       &
 ```
 
 ```bash
-filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 3.csv:p=&:2 -cnt 3
+filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 "3.csv:p=&:2" -cnt 3
 ```
 
 Output:
 
 ```csv
-68      2       68      7       68
-68      2       68      7       &
-68      *       *       *       &
-68      *       *       *       &
-5       2       5       6       5
-3       2       3       *       3
+68      2       68      7       3       68      7
+68      2       68      7       &       &       &
+68      *       *       *       &       &       &
+68      *       *       *       &       &       &
+5       2       5       6       3       5       6
+3       2       3       *       3       3       &
 ```
 
 ```bash
-filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 3.csv:p=&:2 -cnt 2
+filterx -1 "k=2I" -2 "cut=1-3:p=*" 1.csv:p=# 2.csv:2 "3.csv:p=&:2" -cnt 2
 ```
 
 Output:
@@ -180,7 +180,7 @@ Output:
 2       *       *       *       &       &       &
 ```
 
-#### Query same variant-point in vcf files
+### Query same variant-point in vcf files
 
 <details>
 <summary>1.vcf</summary>
@@ -316,7 +316,7 @@ Output:
 Find the same variant-point that occurs in at least 2 files.
 
 ```bash
-filterx -1 "k=1i2i:s=t" 2.vcf:cut=1 1.vcf 3.vcf -cnt 2,
+filterx -1 "k=1i2i:cut=" 2.vcf:cut=1 1.vcf 3.vcf -cnt 2,
 ```
 
 Output:
