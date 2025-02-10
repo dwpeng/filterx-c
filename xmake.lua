@@ -10,7 +10,7 @@ target("zlib")
 target("filterx")
     set_kind("binary")
     if is_mode("debug") then
-        add_cflags("-ggdb", "-fno-omit-frame-pointer", "-fsanitize=type")
+        add_cflags("-ggdb", "-fno-omit-frame-pointer", "-fsanitize=address")
         add_syslinks("asan")
     end
     add_includedirs("include", "deps/zlib")
