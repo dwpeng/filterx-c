@@ -7,6 +7,5 @@ build/
 
 zig-out/
 .zig-cache/
-test-data
 .vscode/compile_commands.json
 .vscode/launch.json
