@@ -49,6 +49,8 @@ Except for the above filter conditions, filterx also supports the following filt
 - `-L [Number]`: means the limit of the records, for example, `-L 10` means only the top 10 records will be outputed.
 - `-s [Char]`: means the separator of the output file, default is `\t`.
 - `-o [File]`: means the output file, default is stdout.
+- `-R`: row mode, the records will be outputed row by row, default is column mode.
+- `-F`: full mode, ignore cut parameter, every column will be outputed, but only row mode is supported.
 
 ### Group
 
