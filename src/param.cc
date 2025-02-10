@@ -181,6 +181,16 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
   // freq = 0.0001,1.0
   // cnt = 1,222,2147483647
 
+  // find continue :
+  for (size_t i = 0; i < len; i++) {
+    if (arg[i] == ARG_SEPARATOR) {
+      if (i + 1 < len && (arg[i + 1] == ARG_SEPARATOR)) {
+        *error = "attribute is invalid, found continue :";
+        return false;
+      }
+    }
+  }
+
   while (idx < len) {
     size_t start = idx;
     while (idx < len && arg[idx] != ARG_SEPARATOR) {
