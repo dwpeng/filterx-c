@@ -33,6 +33,16 @@ static FileParams defaultFileParams = {
   .placehoder = '-',
 };
 
+ProcessorParams defaultProcessorParams = {
+  .min_count = 1,
+  .max_count = INT32_MAX,
+  .fmin_count = 0.0001,
+  .fmax_count = 1.0,
+  .output_path = std::string("-"),
+  .output_limit = -1,
+  .output_separator = '\t',
+};
+
 Record*
 create_record(FileParams* params) {
   auto record = new Record(params->path, params->separator, params->row_keys,

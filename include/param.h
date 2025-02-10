@@ -80,6 +80,8 @@ struct ProcessorParams {
   char output_separator;
 };
 
+extern ProcessorParams defaultProcessorParams;
+
 typedef std::vector<std::tuple<int, filterx::GroupParams> > GroupParamsList;
 typedef std::vector<filterx::FileParams> FileParamsList;
 
