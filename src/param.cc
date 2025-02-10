@@ -1,5 +1,6 @@
 #include "param.h"
 #include "process.h"
+#include <algorithm>
 
 namespace filterx {
 
@@ -113,7 +114,7 @@ typedef struct {
 } ParseAges;
 
 static ParseAges defaultParseAges = {
-  .separator = ',',
+  .separator = '\t',
   .comment = '#',
   .min_count = 1,
   .max_count = INT32_MAX,
@@ -241,8 +242,8 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
     if (attr.size() > 4 && attr[0] == 'r' && attr[1] == 'e' && attr[2] == 'q') {
       std::string_view value = attr.substr(4);
       if (value.empty()) {
-        idx++;
-        continue;
+        fprintf(stderr, "req value is empty\n");
+        exit(EXIT_FAILURE);
       }
       if (value == "Y") {
         A->exist = ExistConditionMust;
@@ -303,6 +304,16 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
       A->record_limit = std::stoi(std::string(value_slice));
       break;
     case 'p':
+      if (value_slice.empty()) {
+        *error = "placehoder is empty, please set a single character, if you "
+                 "want to use '*' or '&', try to add a backslash before it, "
+                 "like \\* or \\&";
+        return false;
+      }
+      if (value_slice.size() != 1) {
+        *error = "placehoder should be single character";
+        return false;
+      }
       A->placehoder = value_slice[0];
       break;
     case 'k': {
@@ -442,6 +453,8 @@ parse_file_params(const char* arg, GroupParamsList* group_params_list) {
     A.group_numbers.insert(A.group_numbers.begin(), 1);
   }
 
+  // reverse group_numbers
+  std::reverse(A.group_numbers.begin(), A.group_numbers.end());
   for (auto group_number : A.group_numbers) {
     int found = 0;
     for (auto group_params : *group_params_list) {
