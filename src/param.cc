@@ -621,7 +621,7 @@ help() {
   fprintf(stderr, "  k=<key>          Key, e.g. 1f2i3S\n");
   fprintf(
       stderr,
-      "    There are three types of keys: float(f/F), int(i/I), string(s/S\n");
+      "    There are three types of keys: float(f/F), int(i/I), string(s/S)\n");
   fprintf(stderr,
           "    f: float, i: int, s: string (ascending) from small to large\n");
   fprintf(stderr,
