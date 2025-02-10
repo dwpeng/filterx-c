@@ -84,13 +84,6 @@ public:
     return this->must_exist;
   }
 
-  bool
-  equals(Record& other) {
-    auto key_key = this->row_buffer.key();
-    auto record_key = other.row_buffer.key();
-    return key_key == record_key;
-  }
-
   RecordStatus
   __next() {
     assert(this->data_provider != nullptr);
