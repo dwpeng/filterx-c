@@ -96,6 +96,7 @@ The above command means the file `file_path` will be applied with the filter `cu
 
 <details>
 <summary>2.csv</summary>
+
 ```csv
 2,,3,4
 2,68,7,8
@@ -105,6 +106,7 @@ The above command means the file `file_path` will be applied with the filter `cu
 2,2,
 2,
 ```
+
 </details>
 
 <details>
@@ -318,7 +320,7 @@ Output:
 Find the same variant-point that occurs in at least 2 files.
 
 ```bash
-filterx -1 "k=1i2i:cut=" 2.vcf:cut=1 1.vcf 3.vcf -cnt 2,
+filterx -1 "k=1i2i:cut=" 2.vcf:cut=1,2 1.vcf 3.vcf -cnt 2,
 ```
 
 Output:
