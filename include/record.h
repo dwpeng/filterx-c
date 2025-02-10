@@ -120,8 +120,9 @@ public:
       this->record_status = RecordStatusWaitConsumption;
     } else {
       this->record_status = RecordStatusEof;
-      return RecordStatusEof;
     }
+    assert(this->record_status == RecordStatusWaitConsumption
+           || this->record_status == RecordStatusEof);
     return this->record_status;
   }
 
@@ -132,8 +133,8 @@ public:
       if (s == RecordStatusEof) {
         return RecordStatusEof;
       }
-      if (this->check_count_condition()) {
-        return RecordStatusWaitConsumption;
+      if (!this->check_count_condition()) {
+        continue;
       }
       auto key = this->key().value_or(nullptr);
       if (key == nullptr) {
@@ -248,6 +249,16 @@ public:
     return this->placehoder;
   }
 
+  void
+  set_id(int id) {
+    this->id = id;
+  }
+
+  int
+  get_id() {
+    return this->id;
+  }
+
 private:
   uint32_t min_count;
   uint32_t max_count;
@@ -260,6 +271,7 @@ private:
   int record_limit = -1;
   char comment = '#';
   char placehoder = '-';
+  int id;
 };
 
 } // namespace filterx

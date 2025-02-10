@@ -18,6 +18,7 @@ Processor::Processor(ProcessorParams& params) : params(params) {
 void
 Processor::add_record(Record* record) {
   this->records.push_back(record);
+  record->set_id(this->records.size());
 }
 
 void
@@ -59,7 +60,6 @@ Processor::flush_all_records_to_file() {
     }
   }
   auto output_buffer = this->output_buffer;
-  output_buffer.clear();
   for (int n = 0; n < max_rows; n++) {
     for (int i = 0; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
@@ -107,8 +107,8 @@ Processor::flush_all_records_to_file() {
     // change the last separator to newline
     output_buffer.pop_back();
     output_buffer.push_back('\n');
-    fwrite(output_buffer.data(), 1, output_buffer.size(), this->output_file);
   }
+  fwrite(output_buffer.data(), 1, output_buffer.size(), this->output_file);
 }
 
 // row mode
@@ -155,9 +155,9 @@ Processor::flush_all_records_to_file_row_mode() {
       // change the last separator to newline
       output_buffer.pop_back();
       output_buffer.push_back('\n');
-      fwrite(output_buffer.data(), 1, output_buffer.size(), this->output_file);
     }
   }
+  fwrite(output_buffer.data(), 1, output_buffer.size(), this->output_file);
 }
 
 void
@@ -202,6 +202,7 @@ get_key(Record* r) {
       }
     }
   }
+  assert(r->status() == RecordStatusWaitConsumption);
   return row_key;
 }
 
@@ -243,19 +244,16 @@ the_topest_key(std::vector<Record*>& records, int* ntop) {
     return nullptr;
   }
   RowKey* top = nullptr;
-  int idx = 0;
   Record* r = nullptr;
-  while (idx < records.size()) {
-    r = records[idx];
+  for (int i = 0; i < records.size(); i++) {
+    r = records[i];
     if (r->status() != RecordStatusWaitConsumption) {
-      idx++;
       continue;
     }
     top = get_key(r);
     if (top != nullptr) {
       break;
     }
-    idx++;
   }
   if (top == nullptr) {
     return nullptr;
@@ -267,7 +265,7 @@ the_topest_key(std::vector<Record*>& records, int* ntop) {
     return top;
   }
 
-  for (int i = idx; i < records.size(); i++) {
+  for (int i = 0; i < records.size(); i++) {
     auto r = records[i];
     if (r->status() != RecordStatusWaitConsumption) {
       continue;
@@ -292,7 +290,6 @@ the_topest_key(std::vector<Record*>& records, int* ntop) {
     if (other == nullptr) {
       continue;
     }
-
     if (top->equals(other)) {
       n_top++;
       r->set_status(RecordStatusWaitOutput);
@@ -317,7 +314,7 @@ Processor::process() {
       break;
     }
     bool drop_all = false;
-    for (int i = 1; i < this->records.size(); i++) {
+    for (int i = 0; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
         if (this->records[i]->get_exist() == ExistConditionMust) {
           drop_all = true;
