@@ -22,7 +22,6 @@ public:
   void add_record(Record* record);
   void prepare();
   void flush_all_records_to_file();
-  void flush_root_record_to_file();
   void drop_all_records_and_update_next();
   void process();
 

@@ -7,8 +7,8 @@ static GroupParams defaultGroupParams = {
   .row_keys = {},
   .key_types = {},
   .sort_order = {},
-  .cut_columns = {},
-  .separator = ',',
+  .cut_columns = { -1 },
+  .separator = '\t',
   .record_limit = -1,
   .must_exist = ExistConditionOptional,
   .min_count = 1,
@@ -19,11 +19,11 @@ static GroupParams defaultGroupParams = {
 
 static FileParams defaultFileParams = {
   .path = "",
-  .separator = ',',
+  .separator = '\t',
   .row_keys = {},
   .key_types = {},
   .sort_order = {},
-  .cut_columns = {},
+  .cut_columns = { -1 },
   .must_exist = ExistConditionOptional,
   .record_limit = -1,
   .min_count = 1,
@@ -123,7 +123,7 @@ static ParseAges defaultParseAges = {
   .row_keys = {},
   .key_types = {},
   .sort_order = {},
-  .cut_columns = {},
+  .cut_columns = { -1 },
   .group_numbers = {},
 };
 
@@ -188,6 +188,7 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
       }
 
       std::string_view value = attr.substr(4);
+      A->cut_columns.clear();
       if (value.empty()) {
         idx++;
         continue;
@@ -237,7 +238,7 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
     }
     // parse req
     // the alias of exist
-    if(attr.size() > 4 && attr[0] == 'r' && attr[1] == 'e' && attr[2] == 'q') {
+    if (attr.size() > 4 && attr[0] == 'r' && attr[1] == 'e' && attr[2] == 'q') {
       std::string_view value = attr.substr(4);
       if (value.empty()) {
         idx++;
@@ -568,8 +569,9 @@ help() {
   fprintf(stderr, "  M=<max_count>    Max count, default is 2147483647\n");
   fprintf(stderr, "  l=<record_limit> Record limit, default is -1\n");
   fprintf(stderr, "  p=<placehoder>   Placehoder, default is -\n");
-  fprintf(stderr,
-          "  req=[Y|N]        Y: must exist, N: not exist, default is either\n");
+  fprintf(
+      stderr,
+      "  req=[Y|N]        Y: must exist, N: not exist, default is either\n");
   fprintf(stderr, "  k=<key>          Key, e.g. 1f2i3S\n");
   fprintf(
       stderr,
@@ -759,11 +761,13 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
       continue;
     }
     auto file_params = parse_file_params(argv[i], group_params_list);
+    if (file_params.cut_columns.size() == 1
+        && file_params.cut_columns[0] == -1) {
+      file_params.cut_columns.clear();
+      apply_key_column_to_file(&file_params);
+    }
     file_params_list->push_back(file_params);
   }
-
-  // only apply the first file's key columns to cut columns
-  apply_key_column_to_file(&file_params_list->at(0));
 }
 
 } // namespace filterx

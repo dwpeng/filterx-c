@@ -104,43 +104,6 @@ Processor::flush_all_records_to_file() {
 }
 
 void
-Processor::flush_root_record_to_file() {
-  // output the first record
-  auto record = this->records[0];
-  auto buffer = record->buffer();
-  auto cut = record->get_cut_columns();
-  for (int n = 0; n < record->get_record_limit(); n++) {
-    auto row = buffer->get_row(n).value_or(nullptr);
-    if (row == nullptr) {
-      continue;
-    }
-    char placehoder = record->get_placehoder();
-    for (int j = 0; j < cut.size(); j++) {
-      auto item = row->get_item(cut[j]);
-      if (item.has_value()) {
-        auto item_value = item.value();
-        fprintf(this->output_file, "%s%c", item_value.data(),
-                this->params.output_separator);
-      } else {
-        fprintf(this->output_file, "%c%c", placehoder,
-                this->params.output_separator);
-      }
-    }
-    // output the rest of the records
-    for (int i = 1; i < this->records.size(); i++) {
-      auto cut = this->records[i]->get_cut_columns();
-      for (int j = 0; j < cut.size(); j++) {
-        fprintf(this->output_file, "%c%c", placehoder,
-                this->params.output_separator);
-      }
-    }
-    // remove the last separator
-    fseek(this->output_file, -1, SEEK_CUR);
-    fprintf(this->output_file, "\n");
-  }
-}
-
-void
 Processor::drop_all_records_and_update_next() {
   for (int i = 0; i < this->records.size(); i++) {
     auto s = this->records[i]->status();
@@ -217,16 +180,16 @@ topest_of_2(RowKey* left_key, RowKey* right_key) {
 }
 
 RowKey*
-the_topest_key(std::vector<Record*>& records, std::vector<int>* topest_idx) {
-  topest_idx->clear();
+the_topest_key(std::vector<Record*>& records, int* ntop) {
+  *ntop = 0;
   if (records.size() == 0) {
     return nullptr;
   }
-
   RowKey* top = nullptr;
   int idx = 0;
+  Record* r = nullptr;
   while (idx < records.size()) {
-    auto r = records[idx];
+    r = records[idx];
     if (r->status() != RecordStatusWaitConsumption) {
       idx++;
       continue;
@@ -238,12 +201,12 @@ the_topest_key(std::vector<Record*>& records, std::vector<int>* topest_idx) {
     idx++;
   }
   if (top == nullptr) {
-    topest_idx->clear();
     return nullptr;
   }
 
   if (records.size() == 1) {
-    topest_idx->push_back(0);
+    *ntop = 1;
+    r->set_status(RecordStatusWaitOutput);
     return top;
   }
 
@@ -261,6 +224,8 @@ the_topest_key(std::vector<Record*>& records, std::vector<int>* topest_idx) {
     top = topest_of_2(top, other);
   }
 
+  int n_top = 0;
+
   for (int i = 0; i < records.size(); i++) {
     auto r = records[i];
     if (r->status() != RecordStatusWaitConsumption) {
@@ -272,9 +237,11 @@ the_topest_key(std::vector<Record*>& records, std::vector<int>* topest_idx) {
     }
 
     if (top->equals(other)) {
-      topest_idx->push_back(i);
+      n_top++;
+      r->set_status(RecordStatusWaitOutput);
     }
   }
+  *ntop = n_top;
   return top;
 }
 
@@ -285,75 +252,13 @@ Processor::process() {
     fflush(stderr);
     return;
   }
-  auto other_records = this->records;
-  // remove the root record
-  other_records.erase(other_records.begin());
   uint32_t ouput_number = 0;
-  auto topest_idx = std::vector<int>{};
-  assert(this->records.size() > 0);
   while (1) {
     int c = 0;
-    auto root_record_keys = get_key(this->records[0]);
-    if (root_record_keys == nullptr) {
+    auto* topest_keys = the_topest_key(this->records, &c);
+    if (topest_keys == nullptr) {
       break;
     }
-    records[0]->set_status(RecordStatusWaitOutput);
-    c++;
-    int stop = 0;
-    while (!stop) {
-
-      auto other_top_key = the_topest_key(other_records, &topest_idx);
-
-      if (other_top_key == nullptr) {
-        break;
-      }
-      if (root_record_keys->equals(other_top_key)) {
-        this->records[0]->set_status(RecordStatusWaitOutput);
-        for (int j = 0; j < topest_idx.size(); j++) {
-          auto idx = topest_idx[j];
-          other_records[idx]->set_status(RecordStatusWaitOutput);
-          c++;
-        }
-        break;
-      } else {
-        auto which_is_top = topest_of_2(root_record_keys, other_top_key);
-        if (which_is_top != root_record_keys) {
-          for (int j = 0; j < topest_idx.size(); j++) {
-            auto idx = topest_idx[j];
-            other_records[idx]->set_status(RecordStatusUnavailable);
-            auto s = other_records[idx]->next();
-            if (s == RecordStatusEof) {
-              stop = 1;
-            }
-          }
-        } else {
-          // try to update next keys in root record
-          if (this->records[0]->status() == RecordStatusWaitOutput) {
-            double fc = 1.0 / this->records.size();
-            if (1 >= this->params.min_count && this->params.max_count >= 1
-                && fc >= this->params.fmin_count
-                && fc <= this->params.fmax_count) {
-              this->flush_root_record_to_file();
-              ouput_number++;
-              if (this->params.output_limit > 0
-                  && ouput_number >= this->params.output_limit) {
-                return;
-              }
-            }
-          }
-          this->records[0]->set_status(RecordStatusUnavailable);
-          auto s = this->records[0]->next();
-          if (s == RecordStatusEof) {
-            stop = 1;
-          }
-          root_record_keys = get_key(this->records[0]);
-          if (root_record_keys == nullptr) {
-            break;
-          }
-        }
-      }
-    }
-
     bool drop_all = false;
     for (int i = 1; i < this->records.size(); i++) {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
