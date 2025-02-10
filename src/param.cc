@@ -745,7 +745,23 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
                 group_id);
         exit(EXIT_FAILURE);
       }
+
+      // check if group_id exists
+      int found = 0;
+      for (auto group_params : *group_params_list) {
+        auto exist_group_id = std::get<0>(group_params);
+        if (exist_group_id == group_id) {
+          found = 1;
+          break;
+        }
+      }
+      if (found) {
+        fprintf(stderr, "group number %d is duplicated\n", group_id);
+        exit(EXIT_FAILURE);
+      }
+
       group_params_list->push_back(std::make_tuple(group_id, group_params));
+
       i++;
     }
   }
