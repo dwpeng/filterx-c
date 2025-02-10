@@ -765,6 +765,9 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
       i++;
       continue;
     }
+
+    fprintf(stderr, "unknown option: %s\n", argv[i]);
+    exit(EXIT_FAILURE);
   }
 
   // parse group params first
@@ -776,7 +779,7 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
       auto group_params = parse_group_params(argv[i + 1]);
       // parse group number
       int group_id = std::stoi(std::string(argv[i] + 1));
-      if (group_id < 0) {
+      if (group_id < 1) {
         fprintf(stderr, "group number should start from 1, but got %d\n",
                 group_id);
         exit(EXIT_FAILURE);
