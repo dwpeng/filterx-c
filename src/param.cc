@@ -263,7 +263,9 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
       } else if (value == "N") {
         A->exist = ExistConditionNot;
       } else {
-        A->exist = ExistConditionOptional;
+        fprintf(stderr, "req value is invalid, expect Y or N, but got %s\n",
+                std::string(value).c_str());
+        exit(EXIT_FAILURE);
       }
       idx++;
       continue;
