@@ -144,6 +144,7 @@ static char SPERAATOR[] = { ',', ':', '\t', ' ' };
 
 char
 query_separator(const char* arg) {
+  assert(arg != nullptr);
   for (int i = 0; i < sizeof(SPERAATOR) / sizeof(SPERAATOR[0]); i++) {
     if (strchr(arg, SPERAATOR[i]) != nullptr) {
       return SPERAATOR[i];
@@ -301,6 +302,11 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
     std::string_view value_slice = attr.substr(0, next_colon);
     switch (key) {
     case 's':
+      if (value_slice.empty()) {
+        *error = "separator is empty, please set a single character, if you "
+                 "want to use '\\t', try to set 't'";
+        return false;
+      }
       A->separator = query_separator(std::string(value_slice).c_str());
       break;
     case 'c':
@@ -642,17 +648,29 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
       continue;
     }
     if (strcmp(argv[i], "-L") == 0) {
+      if (i + 1 >= argc) {
+        fprintf(stderr, "output limit is empty\n");
+        exit(EXIT_FAILURE);
+      }
       processor_params->output_limit = std::stoi(argv[i + 1]);
       i++;
       continue;
     }
     // output_separator
     if (strcmp(argv[i], "-s") == 0) {
+      if (i + 1 >= argc) {
+        fprintf(stderr, "output separator is empty\n");
+        exit(EXIT_FAILURE);
+      }
       processor_params->output_separator = query_separator(argv[i + 1]);
       i++;
       continue;
     }
     if (strcmp(argv[i], "-o") == 0) {
+      if (i + 1 >= argc) {
+        fprintf(stderr, "output path is empty\n");
+        exit(EXIT_FAILURE);
+      }
       processor_params->output_path = argv[i + 1];
       i++;
       continue;
