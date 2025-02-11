@@ -388,6 +388,8 @@ Filter the blast result that the query sequence is in the bed file. And output t
 
 ```bash
 filterx -cnt 2 -R -F -1 "cut=" -2 "k=1s:cut=1:l=1" bed.txt:k=1s:req=Y blast.txt:2
+# or
+filterx -cnt 2 -R -F -1 "1s" -2 "cut=1:l=1" bed.txt:cut=:req=Y blast.txt:2
 ```
 
 Output:
@@ -415,7 +417,7 @@ OsR498G0100033300.01.P01        OsR498G0100033300.01.P01        100.000 799     
 OsR498G0100033600.01.P01        OsR498G0100033600.01.P01        100.000 149     0       0       1       149     1       149     2.12e-103       288
 ```
 
-Explanation:
+Explanation1:
 
 - `-1 "cut="`: set all files' output columns to empty, it will be applied to all files defaultly
 - `-2 "k=1s:cut=1:l=1"`:
@@ -424,6 +426,20 @@ Explanation:
   - `l=1` means only output the first record of each key
 - `bed.txt:k=1s:req=Y`:
   - `k=1s`: use the first column as the key
+  - `req=Y`: only output the records that contain the file, if this file no more data to read, the process will be terminated emmediately.
+- `blast.txt:2`: apply the group-2 filter to the blast file
+- `-cnt 2`: only output the records that occur 2 files exactly
+- `-R`: row mode, output the records row by row, if the output column is non-empty and use the `-F` parameter, the full mode will be applied
+- `-F`: full mode, output all columns
+
+Explanation2:
+
+- `-1 "1s"`: use the first column as the key
+- `-2 "cut=1:l=1"`:
+  - `cut=1`: let the output column be non-empty, beacuse group-1 has made the output column empty. Only output columns that are non-empty will be outputed.
+  - `l=1` means only output the first record of each key
+- `bed.txt:cut=:req=Y`:
+  - `cut=`: set all columns to empty
   - `req=Y`: only output the records that contain the file, if this file no more data to read, the process will be terminated emmediately.
 - `blast.txt:2`: apply the group-2 filter to the blast file
 - `-cnt 2`: only output the records that occur 2 files exactly
