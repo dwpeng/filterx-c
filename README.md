@@ -33,7 +33,12 @@ filterx supports the following filter conditions:
 
 - `m=[Number]`: means the file contains N-related key-same rows, default is 1.
 - `M=[Number]`: means the file contains N-related key-different rows, default is UINT32_MAX.
-- `k=1s2i3I`: means choose the first column as string, the second column as int, and the third column as int. Lowercase means the column is ascending, and uppercase means the column is descending.
+- `k=[String]`: means choose which column as the key, use a string to represent the column.
+
+  - use a `[number][column_type]` to represent the column, for example, `1s` means the first column is a string type
+  - there are 3 column types: `s` means string, `i` means integer, `f` means float
+  - the lowercase means the column is sorted from small to large, the uppercase means the column is sorted from large to small
+
 - `[Number]`: means the number of the group-id, `1` means the group-id is 1. The group which id is 1 will be applied to all files defaultly.
 - `p=[Char]`: means the placeholder of the output file, each file can have a different placeholder, default is `-`. If the placeholder is `*` or `&`, you need add `\` before it like `\*` or `\&`. Or you can add `" "` to the group filter like `-2 "p=*"`.
 - `s=[Char]`: means the separator of the input file, default is `\t`.
@@ -44,8 +49,8 @@ filterx supports the following filter conditions:
 
 Except for the above filter conditions, filterx also supports the following filter conditions for the process filter:
 
-- `-cnt [Number],[Number]`: means the number of the group-id and the number of the record-id, for example, `-cnt 1,2` means only records occur at least 1 files and at most 2 files will be outputed, default is 1,UINT32_MAX. `-cnt 1` means only records occur exactly 1 file will be outputed.
-- `-freq [Float],[Float]`: means the frequency of the group-id and the frequency of the record-id, for example, `-freq 0.5,0.8` means only records occur at least 50% files and at most 80% files will be outputed, default is 0.0001,1.0
+- `-cnt [Number],[Number]`: means the number of the group-id and the number of the record-id, for example, `-cnt 1,2` means only records occur at least 1 files and at most 2 files will be outputed, default is 1,UINT32_MAX. `-cnt 1` means only records occur exactly 1 file will be outputed. `-cnt 1,` means only records occur at least 1 file will be outputed. `-cnt ,2` means only records occur at most 2 files will be outputed.
+- `-freq [Float],[Float]`: means the frequency of the group-id and the frequency of the record-id, for example, `-freq 0.5,0.8` means only records occur at least 50% files and at most 80% files will be outputed, default is 0.0001,1.0, `-freq 0.5,` means only records occur at least 50% files will be outputed. `-freq ,0.5` means only records occur at most 50% files will be outputed.
 - `-L [Number]`: means the limit of the records, for example, `-L 10` means only the top 10 records will be outputed.
 - `-s [Char]`: means the separator of the output file, default is `\t`.
 - `-o [File]`: means the output file, default is stdout.
