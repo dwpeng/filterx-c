@@ -46,7 +46,7 @@ ProcessorParams defaultProcessorParams = {
 };
 
 Record*
-create_record(FileParams* params) {
+create_record_from_file_param(FileParams* params) {
   auto record = new Record(params->path, params->separator, params->row_keys,
                            params->key_types, params->sort_order);
   record->set_cut_columns(params->cut_columns);
@@ -861,6 +861,7 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
     }
     file_params_list->push_back(file_params);
   }
+  check_file_params(file_params_list);
 }
 
 } // namespace filterx

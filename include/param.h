@@ -87,13 +87,7 @@ extern ProcessorParams defaultProcessorParams;
 typedef std::vector<std::tuple<int, filterx::GroupParams> > GroupParamsList;
 typedef std::vector<filterx::FileParams> FileParamsList;
 
-Record* create_record(FileParams* params);
-void apply_group_to_file(FileParams* file_params, GroupParams* group_params);
-FileParams parse_file_params(const char* arg,
-                             GroupParamsList* group_params_list);
-GroupParams parse_group_params(const char* arg);
-void check_file_params(FileParamsList* file_params_list);
-
+Record* create_record_from_file_param(FileParams* params);
 void parse(int argc, char** argv, GroupParamsList* group_params_list,
            FileParamsList* file_params_list, ProcessorParams* processor_params);
 
