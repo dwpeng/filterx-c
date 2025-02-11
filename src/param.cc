@@ -599,7 +599,8 @@ help() {
   fprintf(stderr, "  -[1-9]+ <group>   Group filter conditions\n");
 
   fprintf(stderr, "  -s  <separator>   Separator, default is ,\n");
-  fprintf(stderr, "  -cnt=<min>,<max>  Occurrence range, default is 1,2147483647\n");
+  fprintf(stderr,
+          "  -cnt=<min>,<max>  Occurrence range, default is 1,2147483647\n");
   fprintf(stderr,
           "  -freq=<min>,<max> Frequency range, default is 0.0001,1.0\n");
   fprintf(stderr,
@@ -777,14 +778,14 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
         if (processor_params->fmin_count < 0.0
             || processor_params->fmin_count > 1.0) {
           fprintf(stderr,
-                  "fmin_count should be in range [0.0, 1.0], but got %f\n",
+                  "fmin_count should be in range (0.0, 1.0], but got %f\n",
                   processor_params->fmin_count);
           exit(EXIT_FAILURE);
         }
         if (processor_params->fmax_count < 0.0
             || processor_params->fmax_count > 1.0) {
           fprintf(stderr,
-                  "fmax_count should be in range [0.0, 1.0], but got %f\n",
+                  "fmax_count should be in range (0.0, 1.0], but got %f\n",
                   processor_params->fmax_count);
           exit(EXIT_FAILURE);
         }
