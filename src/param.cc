@@ -594,11 +594,17 @@ check_file_params(FileParamsList* file_params_list) {
 
 void
 help() {
-  fprintf(stderr, "Usage: filterx [options] [file:attribute]\n");
+  fprintf(stderr,
+          "FILTERX: combine multiple table-like files, and output them as user "
+          "specified\n");
+  fprintf(stderr, "Input files must be sorted according to key_types. "
+                  "Unexpected behaviors on "
+                  "unsorted files, except only one file as input\n");
+  fprintf(stderr, "Usage: filterx [options] <file_name:attribute> ...\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -[1-9]+ <group>   Group filter conditions\n");
 
-  fprintf(stderr, "  -s  <separator>   Separator, default is ,\n");
+  fprintf(stderr, "  -s  <separator>   Separator, default is \\t\n");
   fprintf(stderr,
           "  -cnt=<min>,<max>  Occurrence range, default is 1,2147483647\n");
   fprintf(stderr,
@@ -612,7 +618,7 @@ help() {
   fprintf(stderr, "  -h, --help        Show this help message\n");
 
   fprintf(stderr, "List of attributes:\n");
-  fprintf(stderr, "  s=<separator>     Separator, default is ,\n");
+  fprintf(stderr, "  s=<separator>     Separator, default is \\t\n");
   fprintf(stderr, "  c=<comment>       Comment, default is #\n");
   fprintf(stderr, "  m=<min_count>     Min count, default is 1\n");
   fprintf(stderr, "  M=<max_count>     Max count, default is 2147483647\n");
@@ -635,8 +641,8 @@ help() {
       stderr,
       "  <group>           Group number, default apply group 1 to all files\n");
   fprintf(stderr, "Examples:\n");
-  fprintf(stderr, "  filterx -1 \"k=1s:cut=1,2,3,4\" "
-                  "file1\n");
+  fprintf(stderr, "  filterx -1 \"k=1s:cut=1,3-5\" -2 \"m=2:l=1\" "
+                  "file1:2:cut=3 file2:req=Y\n");
 }
 
 void
