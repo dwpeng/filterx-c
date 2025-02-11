@@ -628,7 +628,7 @@ help() {
           "    F: float, I: int, S: string (descending) from large to small\n");
   fprintf(stderr,
           "  cut=<columns>     Columns of outputed, default is key columns\n");
-  fprintf(stderr, "  <group>           Group number, default is all\n");
+  fprintf(stderr, "  <group>           Group number, default apply group 1 to all files\n");
   fprintf(stderr, "Examples:\n");
   fprintf(stderr, "  filterx -1 \"k=1s:cut=1,2,3,4\" "
                   "file1\n");
