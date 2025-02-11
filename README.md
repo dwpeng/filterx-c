@@ -387,7 +387,7 @@ OsR498G0100033600.01.P01
 Filter the blast result that the query sequence is in the bed file. And output the first blast result of each query sequence.
 
 ```bash
-filterx -1 "cut=" -2 ":k=1s:cut=1:l=1" bed.txt:k=1s blast.txt:2 -cnt 2 -R -F
+filterx -1 "cut=" -2 "k=1s:cut=1:l=1" bed.txt:k=1s blast.txt:2 -cnt 2 -R -F
 ```
 
 Output:
@@ -415,3 +415,15 @@ OsR498G0100033300.01.P01        OsR498G0100033300.01.P01        100.000 799     
 OsR498G0100033600.01.P01        OsR498G0100033600.01.P01        100.000 149     0       0       1       149     1       149     2.12e-103       288
 ```
 
+Explanation:
+
+- `-1 "cut="`: set all files' output columns to empty, it will be applied to all files defaultly
+- `-2 "k=1s:cut=1:l=1"`: use the first column as the key
+  - `k=1s`: use the first column as the key
+  - `cut=1`: let the output column be non-empty, beacuse group-1 has made the output column empty. Only output columns that are non-empty will be outputed.
+  - `l=1` means only output the first record of each key
+- `bed.txt:k=1s`: use the first column as the key
+- `blast.txt:2`: apply the group-2 filter to the blast file
+- `-cnt 2`: only output the records that occur 2 files exactly
+- `-R`: row mode, output the records row by row, if the output column is non-empty and use the `-F` parameter, the full mode will be applied
+- `-F`: full mode, output all columns
