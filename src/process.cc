@@ -310,7 +310,8 @@ Processor::process() {
     return;
   }
   uint32_t ouput_number = 0;
-  while (1) {
+  int stop = false;
+  while (!stop) {
     int c = 0;
     auto* topest_keys = the_topest_key(this->records, &c);
     if (topest_keys == nullptr) {
@@ -361,7 +362,12 @@ Processor::process() {
       if (this->records[i]->status() != RecordStatusWaitOutput) {
         continue;
       }
-      this->records[i]->next();
+      auto s = this->records[i]->next();
+      if (s == RecordStatusEof
+          && this->records[i]->get_exist() == ExistConditionMust) {
+        stop = true;
+        break;
+      }
     }
   }
 }
