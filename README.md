@@ -54,7 +54,7 @@ Except for the above filter conditions, filterx also supports the following filt
 - `-L [Number]`: means the limit of the records, for example, `-L 10` means only the top 10 records will be outputed.
 - `-s [Char]`: means the separator of the output file, default is `\t`.
 - `-o [File]`: means the output file, default is stdout.
-- `-R`: row mode, the records will be outputed row by row, default is column mode.
+- `-R`: row mode, the records will be outputed row by row, default is column mode. Only file's `cut` filter is non-empty, row mode is supported.
 - `-F`: full mode, ignore cut parameter, every column will be outputed, but only row mode is supported.
 
 ### Group
@@ -346,3 +346,72 @@ Output:
 3       3212016
 4       3258448
 ```
+
+### Cross match between different types of files
+
+<details>
+<summary>bed.txt</summary>
+
+```txt
+OsR498G0022201900.01.P01
+OsR498G0022202400.01.P01
+OsR498G0022202500.01.P01
+OsR498G0022203500.01.P01
+OsR498G0022203900.01.P01
+OsR498G0022205200.01.P01
+OsR498G0022205900.01.P01
+OsR498G0022206400.01.P01
+OsR498G0022208400.01.P01
+OsR498G0022208500.01.P01
+OsR498G0022211300.01.P01
+OsR498G0022213200.01.P01
+OsR498G0022213900.01.P01
+OsR498G0022215000.01.P01
+OsR498G0022216400.01.P01
+OsR498G0100014500.01.P01
+OsR498G0100014700.01.P01
+OsR498G0100031800.01.P01
+OsR498G0100033300.01.P01
+OsR498G0100033600.01.P01
+```
+
+</details>
+
+<details>
+<summary>blast.txt</summary>
+
+[blast.txt](./test-data/blast-bed/blast.txt)
+
+</details>
+
+Filter the blast result that the query sequence is in the bed file. And output the first blast result of each query sequence.
+
+```bash
+filterx -1 "cut=" -2 ":k=1s:cut=1:l=1" bed.txt:k=1s blast.txt:2 -cnt 2 -R -F
+```
+
+Output:
+
+```txt
+OsR498G0022201900.01.P01        OsR498G0022201900.01.P01        100.000 484     0       0       1       484     1       484     0.0     973
+OsR498G0022202400.01.P01        OsR498G0022202400.01.P01        100.000 161     0       0       1       161     1       161     3.72e-120       332
+OsR498G0022202500.01.P01        OsR498G0022202500.01.P01        100.000 476     0       0       1       476     1       476     0.0     995
+OsR498G0022203500.01.P01        OsR498G0022203500.01.P01        100.000 139     0       0       1       139     1       139     6.46e-102       284
+OsR498G0022203900.01.P01        OsR498G0022203900.01.P01        100.000 93      0       0       1       93      1       93      1.35e-68        196
+OsR498G0022205200.01.P01        OsR498G0022205200.01.P01        100.000 58      0       0       1       58      1       58      1.24e-38        117
+OsR498G0022205900.01.P01        OsR498G0022205900.01.P01        100.000 476     0       0       1       476     1       476     0.0     981
+OsR498G0022206400.01.P01        OsR498G0022206400.01.P01        100.000 224     0       0       1       224     1       224     7.53e-163       445
+OsR498G0022208400.01.P01        OsR498G0022208400.01.P01        100.000 123     0       0       1       123     1       123     1.87e-88        248
+OsR498G0022208500.01.P01        OsR498G0022208500.01.P01        100.000 175     0       0       1       175     1       175     8.02e-126       347
+OsR498G0022211300.01.P01        OsR498G0022211300.01.P01        100.000 94      0       0       1       94      1       94      4.48e-65        187
+OsR498G0022213200.01.P01        OsR498G0022213200.01.P01        100.000 176     0       0       1       176     1       176     8.38e-131       360
+OsR498G0022213900.01.P01        OsR498G0022213900.01.P01        100.000 127     0       0       1       127     1       127     5.73e-89        250
+OsR498G0022215000.01.P01        OsR498G0022215000.01.P01        100.000 161     0       0       1       161     1       161     3.27e-119       329
+OsR498G0022216400.01.P01        OsR498G0022216400.01.P01        100.000 248     0       0       1       248     1       248     0.0     514
+OsR498G0100014500.01.P01        OsR498G0100014500.01.P01        100.000 494     0       0       1       494     1       494     0.0     1014
+OsR498G0100014700.01.P01        OsR498G0100014700.01.P01        100.000 509     0       0       1       509     1       509     0.0     1043
+OsR498G0100031800.01.P01        OsR498G0100031800.01.P01        100.000 1418    0       0       1       1418    1       1418    0.0     2945
+OsR498G0100033300.01.P01        OsR498G0100033300.01.P01        100.000 799     0       0       1       799     1       799     0.0     1672
+OsR498G0100033600.01.P01        OsR498G0100033600.01.P01        100.000 149     0       0       1       149     1       149     2.12e-103       288
+```
+
