@@ -125,6 +125,9 @@ Processor::flush_all_records_to_file_row_mode() {
     auto nrows = record->get_record_limit();
     auto placehoder = record->get_placehoder();
     auto cut = record->get_cut_columns();
+    if (cut.empty()) {
+      continue;
+    }
     for (int n = 0; n < nrows; n++) {
       auto row = buffer->get_row(n).value_or(nullptr);
       int ncol = cut.size();
