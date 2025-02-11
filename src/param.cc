@@ -597,17 +597,19 @@ help() {
   fprintf(stderr, "Usage: filterx [options] [file:attribute]\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -[1-9]+ <group>   Group filter conditions\n");
+
+  fprintf(stderr, "  -s  <separator>   Separator, default is ,\n");
+  fprintf(stderr, "  -cnt=<min>,<max>  Occurrence range, default is 1,2147483647\n");
+  fprintf(stderr,
+          "  -freq=<min>,<max> Frequency range, default is 0.0001,1.0\n");
   fprintf(stderr,
           "  -L <limit>        Output [L] record limit, default is -1\n");
   fprintf(stderr, "  -R                Row mode, default is column mode\n");
   fprintf(stderr, "  -F                Full mode, output all columns, only "
                   "available in row mode\n");
   fprintf(stderr, "  -o  <file>        Output file, default is stdout\n");
-  fprintf(stderr, "  -s  <separator>   Separator, default is ,\n");
   fprintf(stderr, "  -h, --help        Show this help message\n");
-  fprintf(stderr, "  -cnt=<min>,<max>  Count range, default is 1,2147483647\n");
-  fprintf(stderr,
-          "  -freq=<min>,<max> Frequency range, default is 0.0001,1.0\n");
+
   fprintf(stderr, "List of attributes:\n");
   fprintf(stderr, "  s=<separator>     Separator, default is ,\n");
   fprintf(stderr, "  c=<comment>       Comment, default is #\n");
@@ -628,7 +630,9 @@ help() {
           "    F: float, I: int, S: string (descending) from large to small\n");
   fprintf(stderr,
           "  cut=<columns>     Columns of outputed, default is key columns\n");
-  fprintf(stderr, "  <group>           Group number, default apply group 1 to all files\n");
+  fprintf(
+      stderr,
+      "  <group>           Group number, default apply group 1 to all files\n");
   fprintf(stderr, "Examples:\n");
   fprintf(stderr, "  filterx -1 \"k=1s:cut=1,2,3,4\" "
                   "file1\n");
