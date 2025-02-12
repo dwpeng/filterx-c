@@ -656,14 +656,7 @@ apply_key_column_to_file(FileParams* file_params) {
 }
 
 void
-parse(int argc, char** argv, GroupParamsList* group_params_list,
-      FileParamsList* file_params_list, ProcessorParams* processor_params) {
-
-  if (argc == 1) {
-    help();
-    exit(EXIT_SUCCESS);
-  }
-
+parse_process_param(int argc, char* argv[], ProcessorParams* processor_params) {
   // parse process params
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] != '-') {
@@ -812,6 +805,19 @@ parse(int argc, char** argv, GroupParamsList* group_params_list,
     fprintf(stderr, "unknown option: %s\n", argv[i]);
     exit(EXIT_FAILURE);
   }
+}
+
+void
+parse(int argc, char** argv, GroupParamsList* group_params_list,
+      FileParamsList* file_params_list, ProcessorParams* processor_params) {
+
+  if (argc == 1) {
+    help();
+    exit(EXIT_SUCCESS);
+  }
+
+  // parse process params first
+  parse_process_param(argc, argv, processor_params);
 
   // parse group params first
   for (int i = 1; i < argc; i++) {
