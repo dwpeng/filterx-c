@@ -22,7 +22,7 @@ public:
     assert(!this->last_read_row.has_value());
 
     this->newline.set_row(line);
-    this->newline.set_row_idx(row_idx);
+    this->newline.row_idx = row_idx;
     this->newline.split();
 
     if (this->rows.empty()) {
@@ -42,11 +42,6 @@ public:
     this->rows.push_back(this->newline);
     this->newline.clear();
     return true;
-  }
-
-  bool
-  add_row(std::string& line, uint32_t row_idx) {
-    return this->add_row(line.data(), row_idx);
   }
 
   void
@@ -76,13 +71,7 @@ public:
     if (this->rows.empty()) {
       return std::nullopt;
     }
-    this->key1.update_row(&this->rows.front());
     return &this->key1;
-  }
-
-  std::optional<Row*>
-  operator[](int index) {
-    return this->get_row(index);
   }
 
 private:

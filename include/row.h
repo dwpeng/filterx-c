@@ -69,11 +69,6 @@ public:
     this->splited = true;
   }
 
-  std::string_view
-  data() {
-    return std::string_view(this->row.data(), this->row.size());
-  }
-
   std::optional<std::string_view>
   get_item(int index) {
     assert(this->splited);
@@ -113,11 +108,6 @@ public:
   }
 
   void
-  set_row_idx(uint32_t row_idx) {
-    this->row_idx = row_idx;
-  }
-
-  void
   set_row(std::string& row) {
     this->set_row(row.data());
   }
@@ -127,11 +117,13 @@ public:
     return this->separator_index.size() / 2;
   }
 
-private:
+public:
   uint32_t row_idx;
+  char separator;
+
+private:
   std::string row;
   std::vector<uint32_t> separator_index;
-  char separator;
   bool splited = false;
 };
 
@@ -158,7 +150,6 @@ public:
     double float_value;
   } value;
   bool cached = false;
-  int error_code;
 
   TypedKey() = default;
   TypedKey(RowKeyType type, std::string_view key, RowKeySortOrder sort_order)
@@ -166,31 +157,8 @@ public:
 
   void
   update_key(std::string_view key) {
-    this->error_code = 0;
     this->key = key;
     this->cached = false;
-  }
-
-  void
-  update_type(RowKeyType type) {
-    this->error_code = 0;
-    this->type = type;
-  }
-
-  void
-  update_sort_order(RowKeySortOrder sort_order) {
-    this->error_code = 0;
-    this->sort_order = sort_order;
-  }
-
-  bool
-  has_error() {
-    return this->error_code != 0;
-  }
-
-  char*
-  error_message() {
-    return std::strerror(this->error_code);
   }
 
   int64_t
@@ -211,7 +179,6 @@ public:
       i++;
     }
     auto v = std::stoll(std::string(this->key));
-    this->error_code = errno;
     this->value.int_value = v;
     return v;
   }
@@ -224,7 +191,6 @@ public:
     }
     this->cached = true;
     auto v = std::stod(std::string(this->key));
-    this->error_code = errno;
     this->value.float_value = v;
     return v;
   }
@@ -248,9 +214,6 @@ public:
     if (this->type == RowKeyTypeString) {
       r = this->to_string() == other->to_string();
     }
-    if (this->has_error() || other->has_error()) {
-      return this->to_string() == other->to_string();
-    }
     return r;
   }
 
@@ -267,9 +230,6 @@ public:
     if (this->type == RowKeyTypeString) {
       r = this->to_string() < other->to_string();
     }
-    if (this->has_error() || other->has_error()) {
-      return false;
-    }
     return r;
   }
 
@@ -285,9 +245,6 @@ public:
     }
     if (this->type == RowKeyTypeString) {
       r = this->to_string() > other->to_string();
-    }
-    if (this->has_error() || other->has_error()) {
-      return false;
     }
     return r;
   }
@@ -345,8 +302,8 @@ public:
     auto kt = this->key_types[index];
     auto so = this->sort_order[index];
     this->typed_key.update_key(key.value());
-    this->typed_key.update_type(kt);
-    this->typed_key.update_sort_order(so);
+    this->typed_key.type = kt;
+    this->typed_key.sort_order = so;
     return &this->typed_key;
   }
 
