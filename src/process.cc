@@ -18,7 +18,7 @@ Processor::Processor(ProcessorParams& params) : params(params) {
 void
 Processor::add_record(Record* record) {
   this->records.push_back(record);
-  record->set_id(this->records.size());
+  record->id = this->records.size();
 }
 
 void
@@ -47,11 +47,11 @@ void
 Processor::flush_all_records_to_file() {
   int max_rows = 0;
   for (int i = 0; i < this->records.size(); i++) {
-    if (this->records[i]->status() != RecordStatusWaitOutput) {
+    if (this->records[i]->record_status != RecordStatusWaitOutput) {
       continue;
     }
     auto record = this->records[i];
-    if (record->get_cut_columns().empty()) {
+    if (record->cut_columns.empty()) {
       continue;
     }
     auto nrows = record->get_record_limit();
@@ -62,10 +62,10 @@ Processor::flush_all_records_to_file() {
   auto output_buffer = this->output_buffer;
   for (int n = 0; n < max_rows; n++) {
     for (int i = 0; i < this->records.size(); i++) {
-      if (this->records[i]->status() != RecordStatusWaitOutput) {
-        auto cut = this->records[i]->get_cut_columns();
-        char placehoder = this->records[i]->get_placehoder();
-        for (int j = 0; j < cut.size(); j++) {
+      if (this->records[i]->record_status != RecordStatusWaitOutput) {
+        auto cut = &this->records[i]->cut_columns;
+        char placehoder = this->records[i]->placehoder;
+        for (int j = 0; j < cut->size(); j++) {
           // fprintf(this->output_file, "%c%c", placehoder,
           //         this->params.output_separator);
           output_buffer.push_back(placehoder);
@@ -75,10 +75,10 @@ Processor::flush_all_records_to_file() {
       }
       auto record = this->records[i];
       auto buffer = record->buffer();
-      auto cut = record->get_cut_columns();
+      auto cut = &record->cut_columns;
       if (n >= record->get_record_limit()) {
-        char placehoder = record->get_placehoder();
-        for (int j = 0; j < cut.size(); j++) {
+        char placehoder = record->placehoder;
+        for (int j = 0; j < cut->size(); j++) {
           // fprintf(this->output_file, "%c%c", placehoder,
           //         this->params.output_separator);
           output_buffer.push_back(placehoder);
@@ -87,9 +87,9 @@ Processor::flush_all_records_to_file() {
         continue;
       }
       auto row = buffer->get_row(n).value_or(nullptr);
-      char placehoder = record->get_placehoder();
-      for (int j = 0; j < cut.size(); j++) {
-        auto item = row->get_item(cut[j]);
+      char placehoder = record->placehoder;
+      for (int j = 0; j < cut->size(); j++) {
+        auto item = row->get_item(cut->at(j));
         if (item.has_value()) {
           auto item_value = item.value();
           // fprintf(this->output_file, "%s%c", item_value.data(),
@@ -117,20 +117,20 @@ Processor::flush_all_records_to_file_row_mode() {
   auto output_buffer = this->output_buffer;
   output_buffer.clear();
   for (int i = 0; i < this->records.size(); i++) {
-    if (this->records[i]->status() != RecordStatusWaitOutput) {
+    if (this->records[i]->record_status != RecordStatusWaitOutput) {
       continue;
     }
     auto record = this->records[i];
     auto buffer = record->buffer();
     auto nrows = record->get_record_limit();
-    auto placehoder = record->get_placehoder();
-    auto cut = record->get_cut_columns();
-    if (cut.empty()) {
+    auto placehoder = record->placehoder;
+    auto cut = &record->cut_columns;
+    if (cut->empty()) {
       continue;
     }
     for (int n = 0; n < nrows; n++) {
       auto row = buffer->get_row(n).value_or(nullptr);
-      int ncol = cut.size();
+      int ncol = cut->size();
       if (this->params.full_mode) {
         ncol = row->size();
       }
@@ -139,7 +139,7 @@ Processor::flush_all_records_to_file_row_mode() {
         if (this->params.full_mode) {
           item_index = j;
         } else {
-          item_index = cut[j];
+          item_index = cut->at(j);
         }
         auto item = row->get_item(item_index);
         if (item.has_value()) {
@@ -151,7 +151,7 @@ Processor::flush_all_records_to_file_row_mode() {
         } else {
           // fprintf(this->output_file, "%c%c", record->get_placehoder(),
           //         this->params.output_separator);
-          output_buffer.push_back(record->get_placehoder());
+          output_buffer.push_back(record->placehoder);
           output_buffer.push_back(this->params.output_separator);
         }
       }
@@ -166,7 +166,7 @@ Processor::flush_all_records_to_file_row_mode() {
 void
 Processor::drop_all_records_and_update_next() {
   for (int i = 0; i < this->records.size(); i++) {
-    auto s = this->records[i]->status();
+    auto s = this->records[i]->record_status;
     if (s == RecordStatusWaitOutput || s == RecordStatusNotPassCondition
         || s == RecordStatusUnavailable || s == RecordStatusNotPassExists) {
       this->records[i]->next();
@@ -186,7 +186,7 @@ get_key(Record* r) {
       }
       assert(s == RecordStatusWaitConsumption);
     } else {
-      assert(r->status() == RecordStatusWaitConsumption);
+      assert(r->record_status == RecordStatusWaitConsumption);
       int all_keys_have_value = 1;
       for (int i = 0; i < row_key->size(); i++) {
         auto key = row_key->get_key(i).value_or(nullptr);
@@ -205,7 +205,7 @@ get_key(Record* r) {
       }
     }
   }
-  assert(r->status() == RecordStatusWaitConsumption);
+  assert(r->record_status == RecordStatusWaitConsumption);
   return row_key;
 }
 
@@ -250,7 +250,7 @@ the_topest_key(std::vector<Record*>& records, int* ntop) {
   Record* r = nullptr;
   for (int i = 0; i < records.size(); i++) {
     r = records[i];
-    if (r->status() != RecordStatusWaitConsumption) {
+    if (r->record_status != RecordStatusWaitConsumption) {
       continue;
     }
     top = get_key(r);
@@ -264,13 +264,13 @@ the_topest_key(std::vector<Record*>& records, int* ntop) {
 
   if (records.size() == 1) {
     *ntop = 1;
-    r->set_status(RecordStatusWaitOutput);
+    r->record_status = RecordStatusWaitOutput;
     return top;
   }
 
   for (int i = 0; i < records.size(); i++) {
     auto r = records[i];
-    if (r->status() != RecordStatusWaitConsumption) {
+    if (r->record_status != RecordStatusWaitConsumption) {
       continue;
     }
     RowKey* other = get_key(r);
@@ -286,7 +286,7 @@ the_topest_key(std::vector<Record*>& records, int* ntop) {
 
   for (int i = 0; i < records.size(); i++) {
     auto r = records[i];
-    if (r->status() != RecordStatusWaitConsumption) {
+    if (r->record_status != RecordStatusWaitConsumption) {
       continue;
     }
     RowKey* other = get_key(r);
@@ -295,7 +295,7 @@ the_topest_key(std::vector<Record*>& records, int* ntop) {
     }
     if (top->equals(other)) {
       n_top++;
-      r->set_status(RecordStatusWaitOutput);
+      r->record_status = RecordStatusWaitOutput;
     }
   }
   *ntop = n_top;
@@ -319,13 +319,13 @@ Processor::process() {
     }
     bool drop_all = false;
     for (int i = 0; i < this->records.size(); i++) {
-      if (this->records[i]->status() != RecordStatusWaitOutput) {
-        if (this->records[i]->get_exist() == ExistConditionMust) {
+      if (this->records[i]->record_status != RecordStatusWaitOutput) {
+        if (this->records[i]->must_exist == ExistConditionMust) {
           drop_all = true;
           break;
         }
       } else {
-        if (this->records[i]->get_exist() == ExistConditionNot) {
+        if (this->records[i]->must_exist == ExistConditionNot) {
           drop_all = true;
           break;
         }
@@ -359,12 +359,12 @@ Processor::process() {
     }
 
     for (int i = 0; i < this->records.size(); i++) {
-      if (this->records[i]->status() != RecordStatusWaitOutput) {
+      if (this->records[i]->record_status != RecordStatusWaitOutput) {
         continue;
       }
       auto s = this->records[i]->next();
       if (s == RecordStatusEof
-          && this->records[i]->get_exist() == ExistConditionMust) {
+          && this->records[i]->must_exist == ExistConditionMust) {
         stop = true;
         break;
       }

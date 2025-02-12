@@ -49,12 +49,12 @@ Record*
 create_record_from_file_param(FileParams* params) {
   auto record = new Record(params->path, params->separator, params->row_keys,
                            params->key_types, params->sort_order);
-  record->set_cut_columns(params->cut_columns);
-  record->set_must_exist(params->must_exist);
+  record->cut_columns = params->cut_columns;
+  record->must_exist = params->must_exist;
   record->set_record_limit(params->record_limit);
   record->set_count(params->min_count, params->max_count);
-  record->set_comment(params->comment);
-  record->set_placehoder(params->placehoder);
+  record->comment = params->comment;
+  record->placehoder = params->placehoder;
   return record;
 }
 
@@ -140,9 +140,11 @@ static ParseAges defaultParseAges = {
   .group_numbers = {},
 };
 
-static char SPERAATOR[] = { ',', ':', '\t', ' ' };
+static char SPERAATOR[] = {
+  ',', ':', '\t', ' ', '|', '.',
+};
 
-char
+static inline char
 query_separator(const char* arg) {
   assert(arg != nullptr);
   for (int i = 0; i < sizeof(SPERAATOR) / sizeof(SPERAATOR[0]); i++) {

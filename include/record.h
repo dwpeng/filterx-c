@@ -48,11 +48,6 @@ public:
   ~Record() { delete this->data_provider; }
 
   void
-  set_cut_columns(std::vector<int>& cut_columns) {
-    this->cut_columns = cut_columns;
-  }
-
-  void
   set_count(int min_count = 1, int max_count = INT32_MAX) {
     if (min_count < 0 || max_count < 0) {
       fprintf(stderr,
@@ -72,16 +67,6 @@ public:
     }
     this->min_count = min_count;
     this->max_count = max_count;
-  }
-
-  void
-  set_must_exist(ExistCondition must_exist) {
-    this->must_exist = must_exist;
-  }
-
-  ExistCondition
-  get_exist() {
-    return this->must_exist;
   }
 
   RecordStatus
@@ -147,11 +132,6 @@ public:
     }
   }
 
-  RecordStatus
-  status() {
-    return this->record_status;
-  }
-
   RowBuffer*
   __consume() {
     if (this->record_status == RecordStatusEof
@@ -196,16 +176,6 @@ public:
     return &this->row_buffer;
   }
 
-  std::vector<int>&
-  get_cut_columns() {
-    return this->cut_columns;
-  }
-
-  void
-  set_status(RecordStatus status) {
-    this->record_status = status;
-  }
-
   void
   set_record_limit(int limit) {
     this->record_limit = limit;
@@ -222,35 +192,13 @@ public:
     return this->record_limit;
   }
 
-  void
-  set_comment(char comment) {
-    this->comment = comment;
-  }
-
-  char
-  get_comment() {
-    return this->comment;
-  }
-
-  void
-  set_placehoder(char placehoder) {
-    this->placehoder = placehoder;
-  }
-
-  char
-  get_placehoder() {
-    return this->placehoder;
-  }
-
-  void
-  set_id(int id) {
-    this->id = id;
-  }
-
-  int
-  get_id() {
-    return this->id;
-  }
+public:
+  std::vector<int> cut_columns;
+  RecordStatus record_status = RecordStatusEmpty;
+  ExistCondition must_exist;
+  char comment = '#';
+  char placehoder = '-';
+  int id;
 
 private:
   uint32_t min_count;
@@ -258,13 +206,7 @@ private:
   std::string path;
   RowBuffer row_buffer;
   DataProvider* data_provider;
-  RecordStatus record_status = RecordStatusEmpty;
-  std::vector<int> cut_columns;
-  ExistCondition must_exist;
   int record_limit = -1;
-  char comment = '#';
-  char placehoder = '-';
-  int id;
 };
 
 } // namespace filterx
