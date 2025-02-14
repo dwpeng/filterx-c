@@ -1,11 +1,12 @@
 #pragma once
 
-#include "record.h"
-#include "row.h"
 #include <cstdint>
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include "record.h"
+#include "row.h"
 
 namespace filterx {
 

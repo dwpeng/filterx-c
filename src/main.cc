@@ -1,7 +1,4 @@
-#include "param.h"
 #include "process.h"
-#include <iostream>
-#include <tuple>
 
 int
 main(int argc, char** argv) {

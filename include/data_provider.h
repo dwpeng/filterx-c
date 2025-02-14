@@ -1,11 +1,14 @@
 #pragma once
 
-#include "zlib.h"
 #include <cstdint>
+#include <cstring>
 #include <fstream>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
+
+#include "zlib.h"
 
 namespace filterx {
 

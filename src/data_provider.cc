@@ -1,6 +1,4 @@
 #include "data_provider.h"
-#include <cstring>
-#include <iostream>
 
 namespace filterx {
 

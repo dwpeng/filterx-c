@@ -1,7 +1,8 @@
 #pragma once
 
-#include "row.h"
 #include <cassert>
+
+#include "row.h"
 
 namespace filterx {
 class RowBuffer {

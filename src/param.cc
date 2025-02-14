@@ -1,6 +1,4 @@
 #include "param.h"
-#include "process.h"
-#include <algorithm>
 
 namespace filterx {
 
@@ -486,8 +484,8 @@ parse_file_params(const char* arg, GroupParamsList* group_params_list) {
   }
 
   // reverse group_numbers
-  std::reverse(A.group_numbers.begin(), A.group_numbers.end());
-  for (auto group_number : A.group_numbers) {
+  for (int i = A.group_numbers.size(); i > 0; i--) {
+    auto group_number = A.group_numbers[i - 1];
     int found = 0;
     for (auto group_params : *group_params_list) {
       auto group_id = std::get<0>(group_params);

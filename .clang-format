@@ -13,6 +13,12 @@ CompactNamespaces: true
 FixNamespaceComments: true
 MaxEmptyLinesToKeep: 1
 PointerAlignment: Left
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<.*\.h>'
+    Priority: 1
+  - Regex: '^"'
+    Priority: 2
 SortIncludes: true
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
