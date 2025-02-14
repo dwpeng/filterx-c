@@ -6,6 +6,13 @@ A simple and lightweight library for filtering tabular data with a simple and in
 
 1. Manual installation:
 
+<details>
+<summary>How to install xmake</summary>
+
+[Install](https://github.com/xmake-io/xmake#installation)
+
+</details>
+
 ```bash
 git clone https://github.com/dwpeng/filterx-c --recursive
 cd filterx-c
