@@ -2,6 +2,8 @@
 
 A simple and lightweight library for filtering tabular data with a simple and intuitive syntax.
 
+> This tool is based on an enhanced version of the [filterx](https://github.com/ruanjue/filterx)
+
 ## Installation
 
 1. Manual installation:
