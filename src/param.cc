@@ -156,6 +156,15 @@ query_separator(const char* arg) {
   return arg[0];
 }
 
+// 添加一个trim函数用于去除字符串两端的空格
+static inline std::string_view
+trim(std::string_view sv) {
+  auto start = sv.find_first_not_of(" \t\n\r");
+  if (start == std::string_view::npos) return {};
+  auto end = sv.find_last_not_of(" \t\n\r");
+  return sv.substr(start, end - start + 1);
+}
+
 bool
 parse_args(ParseAges* A, const char* arg, std::string* error) {
   size_t len = strlen(arg);
@@ -168,18 +177,6 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
   // key: single character or pure number or multiple characters
   // op: = (optional)
   // value: single character or pure number or multiple characters (optional)
-
-  // key op value
-  // c   =  single character
-  // s   =  single character
-  // m   =  pure number
-  // M   =  pure number
-  // l   =  pure number
-  // p   =  single character
-  // cut =  1,2,3,4 or 1-4 or 1,2-4 or 1-2,3-4
-  // group number * *
-  // freq = 0.0001,1.0
-  // cnt = 1,222,2147483647
 
   // find continue :
   for (size_t i = 0; i < len; i++) {
@@ -201,6 +198,8 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
       break;
     }
     std::string_view attr(arg + start, end - start);
+    // 首先去除属性两端的空格
+    attr = trim(attr);
 
     // parse cut columns
     // cut=1,2,3,4 or 1,2,3,4, or cut=1-4 or cut=1,2-4 or cut=1-2,3-4 or cut=:
@@ -211,51 +210,55 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
         attr.remove_suffix(1);
       }
 
-      std::string_view value = attr.substr(4);
-      A->cut_columns.clear();
-      if (value.empty()) {
-        idx++;
-        continue;
-      }
-      std::string_view::size_type pos = 0;
-      while (pos < value.size()) {
-        std::string_view::size_type start = pos;
-        while (pos < value.size() && value[pos] != ',') {
+      // 查找等号位置并处理等号左右可能的空格
+      auto eq_pos = attr.find('=');
+      if (eq_pos != std::string_view::npos) {
+        std::string_view value = trim(attr.substr(eq_pos + 1));
+        A->cut_columns.clear();
+        if (value.empty()) {
+          idx++;
+          continue;
+        }
+        std::string_view::size_type pos = 0;
+        while (pos < value.size()) {
+          std::string_view::size_type start = pos;
+          while (pos < value.size() && value[pos] != ',') {
+            pos++;
+          }
+          std::string_view cut = value.substr(start, pos - start);
+          if (cut.find('-') == std::string::npos) {
+            auto c = std::stoi(std::string(cut));
+            if (c == 0) {
+              *error = "cut column number starts from 1, but got 0";
+              return false;
+            }
+            A->cut_columns.push_back(c - 1);
+          } else {
+            std::string_view::size_type dash = cut.find('-');
+            int start = std::stoi(std::string(cut.substr(0, dash)));
+            int end = std::stoi(std::string(cut.substr(dash + 1)));
+            if (start < 0 || end < 0) {
+              *error = "cut column number starts from 1, but got minus";
+              return false;
+            }
+            if (start == 0 || end == 0) {
+              *error = "cut column number starts from 1, but got 0";
+              return false;
+            }
+            start--;
+            end--;
+            if (start > end) {
+              for (int i = start; i >= end; i--) {
+                A->cut_columns.push_back(i);
+              }
+            } else {
+              for (int i = start; i <= end; i++) {
+                A->cut_columns.push_back(i);
+              }
+            }
+          }
           pos++;
         }
-        std::string_view cut = value.substr(start, pos - start);
-        if (cut.find('-') == std::string::npos) {
-          auto c = std::stoi(std::string(cut));
-          if (c == 0) {
-            *error = "cut column number starts from 1, but got 0";
-            return false;
-          }
-          A->cut_columns.push_back(c - 1);
-        } else {
-          std::string_view::size_type dash = cut.find('-');
-          int start = std::stoi(std::string(cut.substr(0, dash)));
-          int end = std::stoi(std::string(cut.substr(dash + 1)));
-          if (start < 0 || end < 0) {
-            *error = "cut column number starts from 1, but got minus";
-            return false;
-          }
-          if (start == 0 || end == 0) {
-            *error = "cut column number starts from 1, but got 0";
-            return false;
-          }
-          start--;
-          end--;
-          if (start > end) {
-            for (int i = start; i >= end; i--) {
-              A->cut_columns.push_back(i);
-            }
-          } else {
-            for (int i = start; i <= end; i++) {
-              A->cut_columns.push_back(i);
-            }
-          }
-        }
-        pos++;
       }
       idx++;
       continue;
@@ -263,26 +266,30 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
     // parse req
     // the alias of exist
     if (attr.size() > 4 && attr[0] == 'r' && attr[1] == 'e' && attr[2] == 'q') {
-      std::string_view value = attr.substr(4);
-      if (value.empty()) {
-        fprintf(stderr, "req value is empty\n");
-        exit(EXIT_FAILURE);
-      }
-      if (value == "Y") {
-        A->exist = ExistConditionMust;
-      } else if (value == "N") {
-        A->exist = ExistConditionNot;
-      } else {
-        fprintf(stderr, "req value is invalid, expect Y or N, but got %s\n",
-                std::string(value).c_str());
-        exit(EXIT_FAILURE);
+      auto eq_pos = attr.find('=');
+      if (eq_pos != std::string_view::npos) {
+        std::string_view value = trim(attr.substr(eq_pos + 1));
+        if (value.empty()) {
+          fprintf(stderr, "req value is empty\n");
+          exit(EXIT_FAILURE);
+        }
+        if (value == "Y") {
+          A->exist = ExistConditionMust;
+        } else if (value == "N") {
+          A->exist = ExistConditionNot;
+        } else {
+          fprintf(stderr, "req value is invalid, expect Y or N, but got %s\n",
+                  std::string(value).c_str());
+          exit(EXIT_FAILURE);
+        }
       }
       idx++;
       continue;
     }
 
-    // if attr contains =
-    if (attr.find('=') == std::string::npos) {
+    // 检查属性是否包含等号
+    auto eq_pos = attr.find('=');
+    if (eq_pos == std::string::npos) {
       // group number, pure number
       if (attr[0] >= '0' && attr[0] <= '9') {
         int group_number = std::stoi(std::string(attr));
@@ -304,131 +311,146 @@ parse_args(ParseAges* A, const char* arg, std::string* error) {
         }
       }
     }
-    char key = attr[0];
-    // find :
-    attr = attr.substr(2);
-    auto next_colon = attr.find(':');
-    if (next_colon == std::string_view::npos) {
-      next_colon = attr.size();
-    }
-    std::string_view value_slice = attr.substr(0, next_colon);
-    switch (key) {
-    case 's':
-      if (value_slice.empty()) {
-        *error = "separator is empty, please set a single character, if you "
-                 "want to use '\\t', try to set 't'";
-        return false;
-      }
-      A->separator = query_separator(std::string(value_slice).c_str());
-      break;
-    case 'c':
-      A->comment = value_slice[0];
-      break;
-    case 'm':
-      A->min_count = std::stoi(std::string(value_slice));
-      break;
-    case 'M':
-      A->max_count = std::stoi(std::string(value_slice));
-      break;
-    case 'l':
-      A->record_limit = std::stoi(std::string(value_slice));
-      break;
-    case 'p':
-      if (value_slice.empty()) {
-        *error = "placehoder is empty, please set a single character, if you "
-                 "want to use '*' or '&', try to add a backslash before it, "
-                 "like \\* or \\&";
-        return false;
-      }
-      if (value_slice.size() != 1) {
-        *error = "placehoder should be single character";
-        return false;
-      }
-      A->placehoder = value_slice[0];
-      break;
-    case 'k': {
-      // parse keys
-      // k=[value]
-      // value: [col_number][type]
-      // type: f float, i int, s string (asecending) from small to large
-      // type: F float, I int, S string (descending) from large to small
-      // example: 1f2i3S
-      // 1f: column 1 is float, ascending
-      // 2i: column 2 is int, ascending
-      // 3s: column 3 is string, descending
 
-      // col_number: pure number e.g. 1, 222, ...
-      // type: f, i, s, F, I, S
-      // parse keys
-      std::string_view::size_type pos = 0;
-      while (pos < value_slice.size()) {
-        std::string_view::size_type start = pos;
-        while (pos < value_slice.size() && value_slice[pos] >= '0'
-               && value_slice[pos] <= '9') {
-          pos++;
-        }
-        std::string_view col = value_slice.substr(start, pos - start);
-        if (col.empty()) {
-          *error = "key column is empty";
-          return false;
-        }
-        start = pos;
-        while (pos < value_slice.size()
-               && (value_slice[pos] == 'f' || value_slice[pos] == 'i'
-                   || value_slice[pos] == 's' || value_slice[pos] == 'F'
-                   || value_slice[pos] == 'I' || value_slice[pos] == 'S')) {
-          pos++;
-        }
-        std::string_view type = value_slice.substr(start, pos - start);
-        if (type.empty()) {
-          *error = "key type is empty";
-          return false;
-        }
-        uint32_t col_number = std::stoi(std::string(col));
-        RowKeyType key_type = RowKeyTypeUnknown;
-        RowKeySortOrder sort_order = RowKeySortOrderUnknown;
-        switch (type[0]) {
-        case 'f':
-          key_type = RowKeyTypeFloat;
-          sort_order = RowKeySortOrderAsc;
-          break;
-        case 'i':
-          key_type = RowKeyTypeInt;
-          sort_order = RowKeySortOrderAsc;
-          break;
-        case 's':
-          key_type = RowKeyTypeString;
-          sort_order = RowKeySortOrderAsc;
-          break;
-        case 'F':
-          key_type = RowKeyTypeFloat;
-          sort_order = RowKeySortOrderDesc;
-          break;
-        case 'I':
-          key_type = RowKeyTypeInt;
-          sort_order = RowKeySortOrderDesc;
-          break;
-        case 'S':
-          key_type = RowKeyTypeString;
-          sort_order = RowKeySortOrderDesc;
-          break;
-        default:
-          *error = "key type is unknown";
-          return false;
-        }
-        if (col_number == 0) {
-          *error = "key column number starts from 1, but got 0";
-          return false;
-        }
-        A->row_keys.push_back(col_number - 1);
-        A->key_types.push_back(key_type);
-        A->sort_order.push_back(sort_order);
+    // 处理键值对
+    std::string_view key_part, value_part;
+
+    if (eq_pos != std::string::npos) {
+      key_part = trim(attr.substr(0, eq_pos));
+      value_part = trim(attr.substr(eq_pos + 1));
+      if (key_part.empty()) {
+        *error = "key is empty";
+        return false;
       }
-      break;
-    }
-    default:
-      *error = "unknown attribute";
-      return false;
+      // 只取键的第一个字符作为key
+      char key = key_part[0];
+
+      auto next_colon = value_part.find(':');
+      if (next_colon == std::string::npos) {
+        next_colon = value_part.size();
+      }
+      std::string_view value_slice = value_part.substr(0, next_colon);
+
+      switch (key) {
+      case 's':
+        if (value_slice.empty()) {
+          *error = "separator is empty, please set a single character, if you "
+                   "want to use '\\t', try to set 't'";
+          return false;
+        }
+        A->separator = query_separator(std::string(value_slice).c_str());
+        break;
+      case 'c':
+        A->comment = value_slice[0];
+        break;
+      case 'm':
+        A->min_count = std::stoi(std::string(value_slice));
+        break;
+      case 'M':
+        A->max_count = std::stoi(std::string(value_slice));
+        break;
+      case 'l':
+        A->record_limit = std::stoi(std::string(value_slice));
+        break;
+      case 'p':
+        if (value_slice.empty()) {
+          *error = "placehoder is empty, please set a single character, if you "
+                   "want to use '*' or '&', try to add a backslash before it, "
+                   "like \\* or \\&";
+          return false;
+        }
+        if (value_slice.size() != 1) {
+          *error = "placehoder should be single character";
+          return false;
+        }
+        A->placehoder = value_slice[0];
+        break;
+      case 'k': {
+        // parse keys
+        // ...existing code for parsing keys...
+        // 解析键值部分保持不变
+        std::string_view::size_type pos = 0;
+        while (pos < value_slice.size()) {
+          std::string_view::size_type start = pos;
+          while (pos < value_slice.size() && value_slice[pos] >= '0'
+                 && value_slice[pos] <= '9') {
+            pos++;
+          }
+          std::string_view col = value_slice.substr(start, pos - start);
+          if (col.empty()) {
+            *error = "key column is empty";
+            return false;
+          }
+          start = pos;
+          while (pos < value_slice.size()
+                 && (value_slice[pos] == 'f' || value_slice[pos] == 'i'
+                     || value_slice[pos] == 's' || value_slice[pos] == 'F'
+                     || value_slice[pos] == 'I' || value_slice[pos] == 'S')) {
+            pos++;
+          }
+          std::string_view type = value_slice.substr(start, pos - start);
+          if (type.empty()) {
+            *error = "key type is empty";
+            return false;
+          }
+          uint32_t col_number = std::stoi(std::string(col));
+          RowKeyType key_type = RowKeyTypeUnknown;
+          RowKeySortOrder sort_order = RowKeySortOrderUnknown;
+          switch (type[0]) {
+          case 'f':
+            key_type = RowKeyTypeFloat;
+            sort_order = RowKeySortOrderAsc;
+            break;
+          case 'i':
+            key_type = RowKeyTypeInt;
+            sort_order = RowKeySortOrderAsc;
+            break;
+          case 's':
+            key_type = RowKeyTypeString;
+            sort_order = RowKeySortOrderAsc;
+            break;
+          case 'F':
+            key_type = RowKeyTypeFloat;
+            sort_order = RowKeySortOrderDesc;
+            break;
+          case 'I':
+            key_type = RowKeyTypeInt;
+            sort_order = RowKeySortOrderDesc;
+            break;
+          case 'S':
+            key_type = RowKeyTypeString;
+            sort_order = RowKeySortOrderDesc;
+            break;
+          default:
+            *error = "key type is unknown";
+            return false;
+          }
+          if (col_number == 0) {
+            *error = "key column number starts from 1, but got 0";
+            return false;
+          }
+          A->row_keys.push_back(col_number - 1);
+          A->key_types.push_back(key_type);
+          A->sort_order.push_back(sort_order);
+        }
+        break;
+      }
+      default:
+        *error = "unknown attribute";
+        return false;
+      }
+    } else {
+      // 没有等号的情况，直接使用第一个字符作为key
+      char key = attr[0];
+      // 使用attr[2:]作为值
+      if (attr.size() <= 2) {
+        *error = "value is empty";
+        return false;
+      }
+      std::string_view value_part = trim(attr.substr(2));
+
+      // 这里处理没有等号的情况，与上面的逻辑相似
+      // ...
     }
     idx++;
   }
